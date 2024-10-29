@@ -1,0 +1,1316 @@
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE STATE
+OBJECT MODULE PLACED IN .\Objects\state.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE state.c LARGE BROWSE DEBUG OBJECTEXTEND CODE LISTINCLUDE SYMBOLS PRINT(.\Li
+                    -stings\state.lst) PREPRINT(.\Listings\state.i) OBJECT(.\Objects\state.obj)
+
+line level    source
+
+   1          #include <string.h>
+   1      =1  /*--------------------------------------------------------------------------
+   2      =1  STRING.H
+   3      =1  
+   4      =1  String functions.
+   5      =1  Copyright (c) 1988-2002 Keil Elektronik GmbH and Keil Software, Inc.
+   6      =1  All rights reserved.
+   7      =1  --------------------------------------------------------------------------*/
+   8      =1  
+   9      =1  #ifndef __STRING_H__
+  10      =1  #define __STRING_H__
+  11      =1  
+  12      =1  #ifndef _SIZE_T
+  13      =1   #define _SIZE_T
+  14      =1   typedef unsigned int size_t;
+  15      =1  #endif
+  16      =1  
+  17      =1  #ifndef NULL
+  18      =1   #define NULL ((void *) 0L)
+  19      =1  #endif
+  20      =1  
+  21      =1  #pragma SAVE
+  22      =1  #pragma REGPARMS
+  23      =1  extern char *strcat (char *s1, char *s2);
+  24      =1  extern char *strncat (char *s1, char *s2, int n);
+  25      =1  
+  26      =1  extern char strcmp (char *s1, char *s2);
+  27      =1  extern char strncmp (char *s1, char *s2, int n);
+  28      =1  
+  29      =1  extern char *strcpy (char *s1, char *s2);
+  30      =1  extern char *strncpy (char *s1, char *s2, int n);
+  31      =1  
+  32      =1  extern int strlen (char *);
+  33      =1  
+  34      =1  extern char *strchr (const char *s, char c);
+  35      =1  extern int strpos (const char *s, char c);
+  36      =1  extern char *strrchr (const char *s, char c);
+  37      =1  extern int strrpos (const char *s, char c);
+  38      =1  
+  39      =1  extern int strspn (char *s, char *set);
+  40      =1  extern int strcspn (char *s, char *set);
+  41      =1  extern char *strpbrk (char *s, char *set);
+  42      =1  extern char *strrpbrk (char *s, char *set);
+  43      =1  extern char *strstr  (char *s, char *sub);
+  44      =1  extern char *strtok  (char *str, const char *set);
+  45      =1  
+  46      =1  extern char memcmp (void *s1, void *s2, int n);
+  47      =1  extern void *memcpy (void *s1, void *s2, int n);
+  48      =1  extern void *memchr (void *s, char val, int n);
+  49      =1  extern void *memccpy (void *s1, void *s2, char val, int n);
+  50      =1  extern void *memmove (void *s1, void *s2, int n);
+  51      =1  extern void *memset  (void *s, char val, int n);
+  52      =1  #pragma RESTORE
+  53      =1  
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 2   
+
+  54      =1  #endif
+   2          #include "config.h"
+   1      =1  #define CONFIG_FS_SIZE                  512
+   2      =1  #define CONFIG_FS_START                 272
+   3      =1  #define CONFIG_FS_BLOCK_SIZE            2
+   4      =1  #define CONFIG_FS_FILE_TABLE_SIZE       128
+   5      =1  
+   6      =1  #define MAX_BUFFER_SIZE 32
+   7      =1  
+   8      =1  #define ATR_LEN_ADDR    0x0001
+   9      =1  #define ATR_ADDR        0x0002
+  10      =1  #define ATR_MAXLEN      24
+  11      =1  
+  12      =1  #define PIN_ADDR                ATR_ADDR+ATR_MAXLEN //2+24=26
+  13      =1  #define PIN_LEN                 4
+  14      =1  #define PIN_RETRIES_ADDR        PIN_ADDR+PIN_LEN //30
+  15      =1  #define PIN_RETRIES_LEN         1
+  16      =1  
+  17      =1  #define PIN_MAX_RETRIES         3
+  18      =1  
+  19      =1  #define SERNUM_ADDR             PIN_RETRIES_ADDR + PIN_RETRIES_LEN //31
+  20      =1  #define SERNUM_LEN              8
+  21      =1  
+  22      =1  #define RAND_STATE_ADDR         (SERNUM_ADDR + SERNUM_LEN) //39 27x
+  23      =1  #define RAND_STATE_LEN          32
+  24      =1  
+  25      =1  #define EXT_AUTH_KEY_ADDR       (RAND_STATE_ADDR + RAND_STATE_LEN) //71
+  26      =1  #define EXT_AUTH_KEY_LEN        16
+  27      =1  
+  28      =1  #define EXT_AUTH_RETRIES_ADDR   (EXT_AUTH_KEY_ADDR + EXT_AUTH_KEY_LEN) //87 x57
+  29      =1  #define EXT_AUTH_RETRIES_LEN    1
+  30      =1  
+  31      =1  #define EXT_AUTH_MAX_RETRIES         3
+  32      =1  
+  33      =1  #define KEY_ECC_ADDR_SC (EXT_AUTH_RETRIES_ADDR+EXT_AUTH_RETRIES_LEN) //88
+  34      =1  #define KEY_ECC_SZ 60
+  35      =1  
+  36      =1  #define KEY_ECC_ADDR_RD (KEY_ECC_ADDR_SC+KEY_ECC_SZ) //148
+  37      =1  
+  38      =1  
+  39      =1  #define PIN_HASH_ADDR (KEY_ECC_ADDR_RD+KEY_ECC_SZ) //208 //D0
+  40      =1  #define PIN_HASH_LEN 32
+  41      =1  
+   3          #include "memory.h"
+   1      =1  #ifndef __MEMORY_H__
+   2      =1  #define __MEMORY_H__
+   3      =1  
+   4      =1  extern char eeprom_ID_write;
+   5      =1  extern char eeprom_ID_read;
+   6      =1  extern char LSB_address;
+   7      =1  
+   8      =1  unsigned char Memory_ReadByte(unsigned int address);
+   9      =1  unsigned char Memory_ReadByte_Ext(unsigned int address);
+  10      =1  void Memory_WriteByte_Ext(unsigned int address, char data_to_send);
+  11      =1  void Memory_WriteByte(unsigned int address, char data_to_send);
+  12      =1  int Memory_ReadBlock(unsigned int address, unsigned int read_size, unsigned char * databyte);
+  13      =1  int Memory_WriteBlock(unsigned int address, unsigned int write_size, unsigned char * databyte);
+  14      =1  #endif
+   4          #include "state.h"
+   1      =1  #ifndef STATE_H
+   2      =1  #define STATE_H
+   3      =1  
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 3   
+
+   4      =1  //! Length of key in octets.
+   5      =1  #define CRYPT_KEY_LEN   16
+   6      =1  //! Length of cipher block in octets.
+   7      =1  #define CRYPT_BLOCK_LEN 8
+   8      =1  //! Single block encryption function.
+   9      =1  #define crypt_enc(v,k) BC3_enc((unsigned long int *)(v),(unsigned long int *)(k))
+  10      =1  //! Single block decryption function.
+  11      =1  #define crypt_dec(v,k) BC3_dec((unsigned long int *)(v),(unsigned long int *)(k))
+  12      =1  
+  13      =1  #define STATE_OK                0
+  14      =1  #define STATE_ERROR             1
+  15      =1  #define STATE_WRONG             2
+  16      =1  #define STATE_BLOCKED           3
+  17      =1  
+  18      =1  #define KEY_SIZE               4
+  19      =1  
+  20      =1  /********************************/
+  21      =1  /*        Data Structure        */
+  22      =1  /********************************/
+  23      =1  
+  24      =1  struct state_struct
+  25      =1  {
+  26      =1    unsigned int        current;     ///< pointer to current DF header
+  27      =1    unsigned int        currentKey;    ///< pointer to current Key EF header
+  28      =1    unsigned int        currentRecord;  ///< Record number of currently selected EF
+  29      =1    unsigned char         securityState;  ///< security state currently active
+  30      =1    unsigned char         challenge[CRYPT_BLOCK_LEN];
+  31      =1  };
+  32      =1  
+  33      =1  /**************************/
+  34      =1  /*        Variable        */
+  35      =1  /**************************/
+  36      =1  
+  37      =1  
+  38      =1  /**************************/
+  39      =1  /*        Function        */
+  40      =1  /**************************/
+  41      =1  
+  42      =1  
+  43      =1  int State_Init();
+  44      =1  
+  45      =1  int State_Verify();
+  46      =1  
+  47      =1  void State_GetChallenge();
+  48      =1  
+  49      =1  unsigned char State_VerifyAuth();
+  50      =1  
+  51      =1  int State_SetCurrent(unsigned int newfile);
+  52      =1  
+  53      =1  int State_SetCurrentRecord(unsigned int record_num);
+  54      =1  
+  55      =1  int State_SetCurrentKey(unsigned int newKey);
+  56      =1  
+  57      =1  unsigned int State_GetCurrent();
+  58      =1  
+  59      =1  unsigned int State_GetCurrentRecord();
+  60      =1  
+  61      =1  unsigned char State_GetCurrentSecurity();
+  62      =1  
+  63      =1  void State_GetCurrentChallenge();
+  64      =1  
+  65      =1  #endif
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 4   
+
+   5          #include "krisna.h"
+   1      =1  
+   2      =1  #ifndef KRISNA_H
+   3      =1  #define KRISNA_H
+   4      =1  
+   5      =1  #define addr_xi_ECC               0x00
+   6      =1  #define addr_yi_ECC               0x1E
+   7      =1  #define addr_xo_ECC               0xB2
+   8      =1  #define addr_yo_ECC               0xD0
+   9      =1  #define addr_k_ECC                0x3C
+  10      =1  #define  addr_RNG                         0xEE
+  11      =1  #define  addr_k_BC3       0x5A
+  12      =1  #define addr_dati_BC3   0x62
+  13      =1  #define addr_dati_HASH  0x6A
+  14      =1  #define addr_dato_HASH  0x8A
+  15      =1  #define addr_dato_BC3   0xAA
+  16      =1  
+  17      =1  sfr COPBC3              = 0xE8;
+  18      =1  sfr COPSTATR    = 0xF8;
+  19      =1  sfr COPMOSI     = 0xF9;
+  20      =1  sfr COPMISO     = 0xFA;
+  21      =1  sfr COPTH               = 0xFB;
+  22      =1  sfr COPSRC              = 0xFC;
+  23      =1  sfr COPDST              = 0xFD;
+  24      =1  sfr COPCOM              = 0xFF;
+  25      =1  
+  26      =1  sbit s_Empty = 0xF8;
+  27      =1  sbit s_Full = 0xF9;
+  28      =1  sbit s_TR = 0xFA;
+  29      =1  sbit s_ACK = 0xFB;
+  30      =1  sbit s_SM = 0xFC;
+  31      =1  sbit s_HASH = 0xFD;
+  32      =1  sbit s_BC3 = 0xFE;
+  33      =1  sbit s_ECC = 0xFF;
+  34      =1  
+  35      =1  sbit s_Done = 0xD8;
+  36      =1  sbit s_6 = 0xD9;
+  37      =1  sbit s_5 = 0xDA;
+  38      =1  sbit s_4 = 0xDB;
+  39      =1  sbit s_3 = 0xDC;
+  40      =1  sbit s_2 = 0xDD;
+  41      =1  sbit s_1 = 0xDE;
+  42      =1  sbit s_0 = 0xDF;
+  43      =1  
+  44      =1  void coprocessor_init();
+  45      =1  
+  46      =1  
+  47      =1  void copy_data_block_sequential(unsigned char source_address, unsigned char destination_address, unsigned 
+             -int length);
+  48      =1  
+  49      =1  void copy_data_block_independent(unsigned char source_address, unsigned char destination_address, unsigned
+             - int length);
+  50      =1  
+  51      =1  void write_data_independent(unsigned char destination_address, unsigned copdata);
+  52      =1  
+  53      =1  
+  54      =1  void write_data_sequential(unsigned char destination_address, unsigned copdata);
+  55      =1  
+  56      =1  void write_block_sequential(unsigned copdata);
+  57      =1  
+  58      =1          
+  59      =1  unsigned read_data_sequential(unsigned char source_address);
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 5   
+
+  60      =1  
+  61      =1  unsigned read_data_independent(unsigned char source_address);
+  62      =1  
+  63      =1  void copy_data_sequential(unsigned char source_address, unsigned char destination_address);
+  64      =1  
+  65      =1  void copy_data_independent(unsigned char source_address, unsigned char destination_address);
+  66      =1  
+  67      =1  void ECC_sequential();
+  68      =1  
+  69      =1  void ECC_independent();
+  70      =1  
+  71      =1  void HASH_sequential();
+  72      =1  
+  73      =1  void HASH_independent();
+  74      =1  
+  75      =1  void BC3_encrypt_k_sequential();
+  76      =1  
+  77      =1  void BC3_encrypt_k_independent();
+  78      =1  
+  79      =1  void BC3_encrypt_sequential();
+  80      =1  
+  81      =1  void BC3_encrypt_independent();
+  82      =1  
+  83      =1  void BC3_decrypt_k_independent();
+  84      =1  
+  85      =1  void BC3_decrypt_k_sequential();
+  86      =1  
+  87      =1  void BC3_decrypt_independent();
+  88      =1  
+  89      =1  void BC3_decrypt_sequential();
+  90      =1  #endif
+   6          #include "command.h"
+   1      =1  #ifndef COMMAND_H
+   2      =1  
+   3      =1  #define COMMAND_H
+   4      =1  
+   5      =1  /* Command for CRYPTOPROCESSOR */
+   6      =1  //#define DEBUG_ECDH        0x65
+   7      =1  
+   8      =1  /* Command for Debug */
+   9      =1  #define DEBUG_WRITE        0x02
+  10      =1  #define DEBUG_READ         0x04
+  11      =1  #define DEBUG_GETCURRENT   0x22
+  12      =1  #define DEBUG_GETSECURITY  0x24
+  13      =1  #define DEBUG_GETCHALLENGE 0x28
+  14      =1  #define DEBUG_ENCRYPT      0x26
+  15      =1  #define DEBUG_FORMAT       0x0a
+  16      =1  #define Debug_SHM          0x06
+  17      =1  
+  18      =1  /* File Operation */
+  19      =1  #define ISO_SELECT              0xA4      ///< ISO 7816-4 SELECT Instruction code
+  20      =1  #define ISO_READ_BINARY         0xB0      ///< ISO 7816-4 READ BINARY Instruction code
+  21      =1  #define ISO_UPDATE_BINARY       0xD6      ///< ISO 7816-4 UPDATE BINARY Instruction code
+  22      =1  #define ISO_ERASEBINARY                 0x0E
+  23      =1  #define ISO_WRITEBINARY                 0xD0
+  24      =1  #define ISO_READRECORD                  0xB2      ///< ISO 7816-4 READ RECORD Instruction code
+  25      =1  #define ISO_UPDATE_RECORD               0xDC      ///< ISO 7816-4 UPDATE RECORD Instruction code
+  26      =1  #define ISO_APPEND_RECORD               0xE2      ///< ISO 7816-4 APPEND RECORD Instruction code
+  27      =1  #define ISO_WRITERECORD                 0xD2
+  28      =1  
+  29      =1  /* File Management */
+  30      =1  #define ISO_CREATE_FILE         0xE0    ///< ISO 7816-4 CREATE FILE Instruction code
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 6   
+
+  31      =1  #define ISO_DELETE_FILE         0xE4    ///< ISO 7816-4 DELETE FILE Instruction code
+  32      =1  
+  33      =1  /* Security */
+  34      =1  #define ISO_VERIFY              0x20    ///< ISO 7816-4 VERIFY Instruction code
+  35      =1  #define ISO_EXT_AUTH            0x82    ///< ISO 7816-4 EXTERNAL_AUTH Instruction code
+  36      =1  #define ISO_INT_AUTH            0x88    ///< ISO 7816-4 INTERNAL_AUTH Instruction code
+  37      =1  #define ISO_GET_CHALLENGE               0x84    //!< INS byte: Get Challenge
+  38      =1  
+  39      =1  /* Program Code Management */
+  40      =1  #define ISO_LOAD                0xDC      ///< ISO 7816-4 LOAD Instruction code
+  41      =1  #define ISO_INSTALL             0xDC      ///< ISO 7816-4 INSTALL Instruction code
+  42      =1  #define ISO_DELETE              0xDC      ///< ISO 7816-4 DELETE Instruction code
+  43      =1  
+  44      =1  /* Data Transmission */
+  45      =1  #define ISO_GET_RESPONSE        0xC0    ///< ISO 7816-4 GET RESPONSE Instruction code
+  46      =1  
+  47      =1  void Command_Write();
+  48      =1  void Command_Read();
+  49      =1  void Command_Format();
+  50      =1  void Command_Encrypt();
+  51      =1  void Command_GetCurrentChallenge();
+  52      =1  void Command_GetChallenge();
+  53      =1  void Command_ReadSHM();
+  54      =1  void Command_Interpreter();
+  55      =1  
+  56      =1  unsigned int fibo(unsigned int i);
+  57      =1  #endif
+   7          #include "transmission.h"
+   1      =1  #ifndef TRANSMISSION_HEADER_FILE
+   2      =1  #define TRANSMISSION_HEADER_FILE 1
+   3      =1  
+   4      =1  extern unsigned char header[5];
+   5      =1  extern unsigned int sw;
+   6      =1  
+   7      =1  void send_ATR();
+   8      =1  void send_ATR_direct();
+   9      =1  void Transmission_GetHeader(); 
+  10      =1  void Transmission_SendSW();
+  11      =1  void Transmission_SendDebug();
+  12      =1  char Transmission_GetByte ();
+  13      =1  void Transmission_SendByte (char c);
+  14      =1  
+  15      =1  
+  16      =1  #endif
+   8          
+   9          #define EXP_AUTH 0x0230
+  10          
+  11          static struct state_struct     state_mng;              ///< state_manager
+  12          unsigned char key[8] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07};
+  13          extern unsigned char buffer[8];
+  14          extern unsigned char encrypted[CRYPT_BLOCK_LEN];
+  15          extern unsigned char pin[PIN_LEN];
+  16          
+  17          int State_Init(){
+  18   1              state_mng.current = 0;
+  19   1              state_mng.currentKey = 0;
+  20   1              state_mng.currentRecord = 1;
+  21   1              state_mng.securityState = 0;
+  22   1      
+  23   1              return STATE_OK; 
+  24   1      }
+  25          
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 7   
+
+  26          int State_SetCurrent(unsigned int newFile) {
+  27   1              state_mng.current = newFile;
+  28   1              state_mng.currentRecord = 1;
+  29   1              return STATE_OK;
+  30   1      }
+  31          
+  32          int State_SetCurrentRecord(unsigned int record_num) {
+  33   1              state_mng.currentRecord = record_num;
+  34   1              return STATE_OK;
+  35   1      }
+  36          
+  37          unsigned int State_GetCurrent() {
+  38   1              return state_mng.current;
+  39   1      }
+  40          
+  41          unsigned int State_GetCurrentRecord() {
+  42   1              return state_mng.currentRecord;
+  43   1      }
+  44          
+  45          void State_GetCurrentChallenge() {
+  46   1              memcpy( buffer, state_mng.challenge, CRYPT_BLOCK_LEN );
+  47   1      }
+  48          
+  49          unsigned char State_GetCurrentSecurity() {
+  50   1              return state_mng.securityState;
+  51   1      }
+  52          
+  53          int State_Verify() {
+  54   1              unsigned char retries;
+  55   1              unsigned char i, temp_card, temp_rd, diff=0;
+  56   1              
+  57   1              state_mng.securityState &= 0xfe;
+  58   1              retries = Memory_ReadByte(PIN_RETRIES_ADDR);
+  59   1      
+  60   1              if (retries == 0) {
+  61   2                      return STATE_BLOCKED;
+  62   2              }
+  63   1      
+  64   1              for( i=0; i<60; i++ ) {
+  65   2                      write_data_independent((addr_dati_HASH+i),(0x00+i));
+  66   2              }
+  67   1              for( i=0; i<PIN_LEN; i++ ) {
+  68   2                      write_data_independent((addr_dati_HASH+i+60),pin[i]);
+  69   2              }
+  70   1              HASH_sequential();
+  71   1      
+  72   1              for( i=0; i<PIN_HASH_LEN; i++ ) {
+  73   2                      temp_card = Memory_ReadByte(PIN_HASH_ADDR+i);
+  74   2                      temp_rd = read_data_sequential(addr_dato_HASH+i);
+  75   2                      diff |= temp_card^temp_rd;
+  76   2              }
+  77   1      
+  78   1              if( diff>0 ){
+  79   2                      retries--;
+  80   2              } else {
+  81   2                      retries=0x03;
+  82   2              }
+  83   1              
+  84   1              Memory_WriteByte(PIN_RETRIES_ADDR, retries);
+  85   1      
+  86   1              if( diff>0 ) {
+  87   2                      state_mng.securityState = 0x00;
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 8   
+
+  88   2                      return STATE_WRONG;
+  89   2              }
+  90   1      
+  91   1              if (retries == 0) {
+  92   2                      return STATE_BLOCKED;
+  93   2              }
+  94   1              state_mng.securityState |= 0xFF;
+  95   1      
+  96   1              return STATE_OK;
+  97   1      }
+  98          
+  99          unsigned char State_VerifyAuth()
+ 100          {
+ 101   1              unsigned char retries,i;
+ 102   1      //  unsigned long int key[4];
+ 103   1              unsigned char last_data[8];
+ 104   1              
+ 105   1              retries = Memory_ReadByte(EXT_AUTH_RETRIES_ADDR);
+ 106   1      
+ 107   1              if (retries > EXT_AUTH_MAX_RETRIES){
+ 108   2                      return STATE_BLOCKED;
+ 109   2              }
+ 110   1      
+ 111   1      
+ 112   1       // Memory_ReadBlock( (unsigned int) EXT_AUTH_KEY_ADDR, (unsigned int) EXT_AUTH_KEY_LEN, (unsigned char *)
+             - key);
+ 113   1              for(i=0;i<CRYPT_BLOCK_LEN;i++){ 
+ 114   2                      last_data[i] = Memory_ReadByte(RAND_STATE_ADDR + i);
+ 115   2                      write_data_sequential(addr_k_BC3+i, key[i]);
+ 116   2                      write_data_sequential(addr_dati_BC3+i, last_data[i]);
+ 117   2              }
+ 118   1      //  crypt_enc( state_mng.challenge, key );
+ 119   1                      BC3_encrypt_k_sequential();
+ 120   1                      
+ 121   1              for(i=0;i<CRYPT_BLOCK_LEN;i++){ 
+ 122   2                      last_data[i] = read_data_sequential(addr_dato_BC3+i);
+ 123   2                      if (encrypted[i] != last_data[i]){
+ 124   3                              retries++;
+ 125   3                              Memory_WriteByte(EXT_AUTH_RETRIES_ADDR, retries);
+ 126   3                              return STATE_WRONG;
+ 127   3                      }
+ 128   2              }
+ 129   1      
+ 130   1        /* Compare result */
+ 131   1      /*  if( memcmp( encrypted, state_mng.challenge, CRYPT_BLOCK_LEN ) ) {
+ 132   1              retries++;
+ 133   1              Memory_WriteByte(EXT_AUTH_RETRIES_ADDR, retries);
+ 134   1      
+ 135   1              return STATE_WRONG;
+ 136   1        }*/
+ 137   1      
+ 138   1              if(retries > 0) {
+ 139   2                retries = 0;
+ 140   2                Memory_WriteByte(EXT_AUTH_RETRIES_ADDR, retries);
+ 141   2              }
+ 142   1      
+ 143   1              state_mng.securityState |= 0x02;
+ 144   1      
+ 145   1              return STATE_OK;
+ 146   1      }
+ 147          
+ 148          /*
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 9   
+
+ 149          void State_GetChallenge( unsigned char * buffer )
+ 150          {
+ 151            unsigned char block[2], key[4];
+ 152          
+ 153            Memory_ReadBlock( (unsigned int) SERNUM_ADDR, (unsigned int) SERNUM_LEN, (unsigned char *) block);
+ 154           
+ 155            Memory_ReadBlock( (unsigned int) RAND_STATE_ADDR, (unsigned int) sizeof(key), (unsigned char *) key);
+ 156           
+ 157            key[2]=key[1];
+ 158            key[3]=key[0]; //RNG
+ 159          
+ 160            crypt_enc( block, key );
+ 161          
+ 162            Memory_WriteBlock( (unsigned int) RAND_STATE_ADDR, (unsigned int) RAND_STATE_LEN, (unsigned char *) bloc
+             -k);
+ 163          
+ 164            crypt_enc( block, key );
+ 165          
+ 166            memcpy( state_mng.challenge, block, sizeof(block) );
+ 167          
+ 168            memcpy( buffer, block, CRYPT_BLOCK_LEN );
+ 169          }*/
+ 170          
+ 171          
+ 172          void State_GetChallenge()
+ 173          {
+ 174   1              unsigned char block[8],i;
+ 175   1              
+ 176   1              // copy_data_block_independent(addr_RNG, addr_dati_BC3, 8);
+ 177   1      
+ 178   1              // for(i=0;i<CRYPT_BLOCK_LEN;i++){
+ 179   1              //      write_data_sequential(addr_k_BC3+i, key[i]);
+ 180   1              // }
+ 181   1              
+ 182   1              // BC3_encrypt_k_sequential();
+ 183   1              
+ 184   1              
+ 185   1              for(i=0;i<CRYPT_BLOCK_LEN;i++){ 
+ 186   2                      buffer[i] = read_data_independent(addr_RNG);
+ 187   2                      state_mng.challenge[i] = buffer[i];
+ 188   2                      Memory_WriteByte(RAND_STATE_ADDR + i, buffer[i]);
+ 189   2                      write_data_independent(addr_dati_BC3+i, buffer[i]);
+ 190   2                      write_data_sequential(addr_k_BC3+i, key[i]);
+ 191   2              }
+ 192   1              
+ 193   1              BC3_encrypt_k_sequential();
+ 194   1              
+ 195   1              for(i=0;i<CRYPT_BLOCK_LEN;i++){ 
+ 196   2                      block[i] = read_data_sequential(addr_dato_BC3+i);
+ 197   2                      Memory_WriteByte(EXP_AUTH + i, block[i]);
+ 198   2              }
+ 199   1              
+ 200   1      }
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 10  
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+             ; FUNCTION State_Init (BEGIN)
+                                           ; SOURCE LINE # 17
+                                           ; SOURCE LINE # 18
+0000 E4                CLR     A
+0001 900000      R     MOV     DPTR,#state_mng
+0004 F0                MOVX    @DPTR,A
+0005 A3                INC     DPTR
+0006 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 19
+0007 A3                INC     DPTR
+0008 F0                MOVX    @DPTR,A
+0009 A3                INC     DPTR
+000A F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 20
+000B A3                INC     DPTR
+000C F0                MOVX    @DPTR,A
+000D A3                INC     DPTR
+000E 04                INC     A
+000F F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 21
+0010 E4                CLR     A
+0011 A3                INC     DPTR
+0012 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 23
+0013 FE                MOV     R6,A
+0014 FF                MOV     R7,A
+                                           ; SOURCE LINE # 24
+0015         ?C0001:
+0015 22                RET     
+             ; FUNCTION State_Init (END)
+
+             ; FUNCTION _State_SetCurrent (BEGIN)
+                                           ; SOURCE LINE # 26
+;---- Variable 'newFile' assigned to Register 'R6/R7' ----
+                                           ; SOURCE LINE # 27
+0000 900000      R     MOV     DPTR,#state_mng
+0003 EE                MOV     A,R6
+0004 F0                MOVX    @DPTR,A
+0005 A3                INC     DPTR
+0006 EF                MOV     A,R7
+0007 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 28
+0008 900000      R     MOV     DPTR,#state_mng+04H
+000B E4                CLR     A
+000C F0                MOVX    @DPTR,A
+000D A3                INC     DPTR
+000E 04                INC     A
+000F F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 29
+0010 E4                CLR     A
+0011 FE                MOV     R6,A
+0012 FF                MOV     R7,A
+                                           ; SOURCE LINE # 30
+0013         ?C0002:
+0013 22                RET     
+             ; FUNCTION _State_SetCurrent (END)
+
+             ; FUNCTION _State_SetCurrentRecord (BEGIN)
+                                           ; SOURCE LINE # 32
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 11  
+
+;---- Variable 'record_num' assigned to Register 'R6/R7' ----
+                                           ; SOURCE LINE # 33
+0000 900000      R     MOV     DPTR,#state_mng+04H
+0003 EE                MOV     A,R6
+0004 F0                MOVX    @DPTR,A
+0005 A3                INC     DPTR
+0006 EF                MOV     A,R7
+0007 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 34
+0008 E4                CLR     A
+0009 FE                MOV     R6,A
+000A FF                MOV     R7,A
+                                           ; SOURCE LINE # 35
+000B         ?C0003:
+000B 22                RET     
+             ; FUNCTION _State_SetCurrentRecord (END)
+
+             ; FUNCTION State_GetCurrent (BEGIN)
+                                           ; SOURCE LINE # 37
+                                           ; SOURCE LINE # 38
+0000 900000      R     MOV     DPTR,#state_mng
+0003 E0                MOVX    A,@DPTR
+0004 FE                MOV     R6,A
+0005 A3                INC     DPTR
+0006 E0                MOVX    A,@DPTR
+0007 FF                MOV     R7,A
+                                           ; SOURCE LINE # 39
+0008         ?C0004:
+0008 22                RET     
+             ; FUNCTION State_GetCurrent (END)
+
+             ; FUNCTION State_GetCurrentRecord (BEGIN)
+                                           ; SOURCE LINE # 41
+                                           ; SOURCE LINE # 42
+0000 900000      R     MOV     DPTR,#state_mng+04H
+0003 E0                MOVX    A,@DPTR
+0004 FE                MOV     R6,A
+0005 A3                INC     DPTR
+0006 E0                MOVX    A,@DPTR
+0007 FF                MOV     R7,A
+                                           ; SOURCE LINE # 43
+0008         ?C0005:
+0008 22                RET     
+             ; FUNCTION State_GetCurrentRecord (END)
+
+             ; FUNCTION State_GetCurrentChallenge (BEGIN)
+                                           ; SOURCE LINE # 45
+                                           ; SOURCE LINE # 46
+0000 7800        E     MOV     R0,#LOW buffer
+0002 7C00        E     MOV     R4,#HIGH buffer
+0004 7D01              MOV     R5,#01H
+0006 7B01              MOV     R3,#01H
+0008 7A00        R     MOV     R2,#HIGH state_mng+07H
+000A 7900        R     MOV     R1,#LOW state_mng+07H
+000C 7E00              MOV     R6,#00H
+000E 7F08              MOV     R7,#08H
+0010 020000      E     LJMP    ?C?COPY
+             ; FUNCTION State_GetCurrentChallenge (END)
+
+             ; FUNCTION State_GetCurrentSecurity (BEGIN)
+                                           ; SOURCE LINE # 49
+                                           ; SOURCE LINE # 50
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 12  
+
+0000 900000      R     MOV     DPTR,#state_mng+06H
+0003 E0                MOVX    A,@DPTR
+0004 FF                MOV     R7,A
+                                           ; SOURCE LINE # 51
+0005         ?C0007:
+0005 22                RET     
+             ; FUNCTION State_GetCurrentSecurity (END)
+
+             ; FUNCTION State_Verify (BEGIN)
+                                           ; SOURCE LINE # 53
+                                           ; SOURCE LINE # 55
+0000 E4                CLR     A
+0001 900000      R     MOV     DPTR,#diff
+0004 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 57
+0005 900000      R     MOV     DPTR,#state_mng+06H
+0008 E0                MOVX    A,@DPTR
+0009 54FE              ANL     A,#0FEH
+000B F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 58
+000C 7F1E              MOV     R7,#01EH
+000E 7E00              MOV     R6,#00H
+0010 120000      E     LCALL   _Memory_ReadByte
+0013 900000      R     MOV     DPTR,#retries
+0016 EF                MOV     A,R7
+0017 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 60
+0018 7003              JNZ     ?C0008
+                                           ; SOURCE LINE # 61
+001A 020000      R     LJMP    ?C0040
+                                           ; SOURCE LINE # 62
+001D         ?C0008:
+                                           ; SOURCE LINE # 64
+001D E4                CLR     A
+001E 900000      R     MOV     DPTR,#i
+0021 F0                MOVX    @DPTR,A
+0022         ?C0010:
+                                           ; SOURCE LINE # 65
+0022 900000      R     MOV     DPTR,#i
+0025 E0                MOVX    A,@DPTR
+0026 FE                MOV     R6,A
+0027 246A              ADD     A,#06AH
+0029 FF                MOV     R7,A
+002A EE                MOV     A,R6
+002B FD                MOV     R5,A
+002C 7C00              MOV     R4,#00H
+002E 120000      E     LCALL   _write_data_independent
+                                           ; SOURCE LINE # 66
+0031 900000      R     MOV     DPTR,#i
+0034 E0                MOVX    A,@DPTR
+0035 04                INC     A
+0036 F0                MOVX    @DPTR,A
+0037 E0                MOVX    A,@DPTR
+0038 C3                CLR     C
+0039 943C              SUBB    A,#03CH
+003B 40E5              JC      ?C0010
+003D         ?C0011:
+                                           ; SOURCE LINE # 67
+003D E4                CLR     A
+003E 900000      R     MOV     DPTR,#i
+0041 F0                MOVX    @DPTR,A
+0042         ?C0013:
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 13  
+
+                                           ; SOURCE LINE # 68
+0042 900000      R     MOV     DPTR,#i
+0045 E0                MOVX    A,@DPTR
+0046 FE                MOV     R6,A
+0047 24A6              ADD     A,#0A6H
+0049 FF                MOV     R7,A
+004A 7400        E     MOV     A,#LOW pin
+004C 2E                ADD     A,R6
+004D F582              MOV     DPL,A
+004F E4                CLR     A
+0050 3400        E     ADDC    A,#HIGH pin
+0052 F583              MOV     DPH,A
+0054 E0                MOVX    A,@DPTR
+0055 FD                MOV     R5,A
+0056 7C00              MOV     R4,#00H
+0058 120000      E     LCALL   _write_data_independent
+                                           ; SOURCE LINE # 69
+005B 900000      R     MOV     DPTR,#i
+005E E0                MOVX    A,@DPTR
+005F 04                INC     A
+0060 F0                MOVX    @DPTR,A
+0061 E0                MOVX    A,@DPTR
+0062 C3                CLR     C
+0063 9404              SUBB    A,#04H
+0065 40DB              JC      ?C0013
+0067         ?C0014:
+                                           ; SOURCE LINE # 70
+0067 120000      E     LCALL   HASH_sequential
+                                           ; SOURCE LINE # 72
+006A E4                CLR     A
+006B 900000      R     MOV     DPTR,#i
+006E F0                MOVX    @DPTR,A
+006F         ?C0016:
+006F 900000      R     MOV     DPTR,#i
+0072 E0                MOVX    A,@DPTR
+0073 FF                MOV     R7,A
+0074 C3                CLR     C
+0075 9420              SUBB    A,#020H
+0077 5032              JNC     ?C0017
+                                           ; SOURCE LINE # 73
+0079 EF                MOV     A,R7
+007A 24D0              ADD     A,#0D0H
+007C FF                MOV     R7,A
+007D E4                CLR     A
+007E 33                RLC     A
+007F FE                MOV     R6,A
+0080 120000      E     LCALL   _Memory_ReadByte
+0083 900000      R     MOV     DPTR,#temp_card
+0086 EF                MOV     A,R7
+0087 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 74
+0088 900000      R     MOV     DPTR,#i
+008B E0                MOVX    A,@DPTR
+008C 248A              ADD     A,#08AH
+008E FF                MOV     R7,A
+008F 120000      E     LCALL   _read_data_sequential
+;---- Variable 'temp_rd' assigned to Register 'R4' ----
+0092 AC07              MOV     R4,AR7
+                                           ; SOURCE LINE # 75
+0094 900000      R     MOV     DPTR,#diff
+0097 E0                MOVX    A,@DPTR
+0098 FE                MOV     R6,A
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 14  
+
+0099 900000      R     MOV     DPTR,#temp_card
+009C E0                MOVX    A,@DPTR
+009D 6F                XRL     A,R7
+009E FD                MOV     R5,A
+009F EE                MOV     A,R6
+00A0 4D                ORL     A,R5
+00A1 A3                INC     DPTR
+00A2 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 76
+00A3 900000      R     MOV     DPTR,#i
+00A6 E0                MOVX    A,@DPTR
+00A7 04                INC     A
+00A8 F0                MOVX    @DPTR,A
+00A9 80C4              SJMP    ?C0016
+00AB         ?C0017:
+                                           ; SOURCE LINE # 78
+00AB 900000      R     MOV     DPTR,#diff
+00AE E0                MOVX    A,@DPTR
+00AF D3                SETB    C
+00B0 9400              SUBB    A,#00H
+00B2 900000      R     MOV     DPTR,#retries
+00B5 4005              JC      ?C0019
+                                           ; SOURCE LINE # 79
+00B7 E0                MOVX    A,@DPTR
+00B8 14                DEC     A
+00B9 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 80
+00BA 8003              SJMP    ?C0020
+00BC         ?C0019:
+                                           ; SOURCE LINE # 81
+00BC 7403              MOV     A,#03H
+00BE F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 82
+00BF         ?C0020:
+                                           ; SOURCE LINE # 84
+00BF 900000      R     MOV     DPTR,#retries
+00C2 E0                MOVX    A,@DPTR
+00C3 FD                MOV     R5,A
+00C4 7F1E              MOV     R7,#01EH
+00C6 7E00              MOV     R6,#00H
+00C8 120000      E     LCALL   _Memory_WriteByte
+                                           ; SOURCE LINE # 86
+00CB 900000      R     MOV     DPTR,#diff
+00CE E0                MOVX    A,@DPTR
+00CF D3                SETB    C
+00D0 9400              SUBB    A,#00H
+00D2 4009              JC      ?C0021
+                                           ; SOURCE LINE # 87
+00D4 E4                CLR     A
+00D5 900000      R     MOV     DPTR,#state_mng+06H
+00D8 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 88
+00D9 FE                MOV     R6,A
+00DA 7F02              MOV     R7,#02H
+00DC 22                RET     
+                                           ; SOURCE LINE # 89
+00DD         ?C0021:
+                                           ; SOURCE LINE # 91
+00DD 900000      R     MOV     DPTR,#retries
+00E0 E0                MOVX    A,@DPTR
+00E1 7004              JNZ     ?C0022
+                                           ; SOURCE LINE # 92
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 15  
+
+00E3         ?C0040:
+00E3 FE                MOV     R6,A
+00E4 7F03              MOV     R7,#03H
+00E6 22                RET     
+                                           ; SOURCE LINE # 93
+00E7         ?C0022:
+                                           ; SOURCE LINE # 94
+00E7 900000      R     MOV     DPTR,#state_mng+06H
+00EA 74FF              MOV     A,#0FFH
+00EC F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 96
+00ED E4                CLR     A
+00EE FE                MOV     R6,A
+00EF FF                MOV     R7,A
+                                           ; SOURCE LINE # 97
+00F0         ?C0009:
+00F0 22                RET     
+             ; FUNCTION State_Verify (END)
+
+             ; FUNCTION State_VerifyAuth (BEGIN)
+                                           ; SOURCE LINE # 99
+                                           ; SOURCE LINE # 100
+                                           ; SOURCE LINE # 105
+0000 7F57              MOV     R7,#057H
+0002 7E00              MOV     R6,#00H
+0004 120000      E     LCALL   _Memory_ReadByte
+0007 900000      R     MOV     DPTR,#retries
+000A EF                MOV     A,R7
+000B F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 107
+000C D3                SETB    C
+000D 9403              SUBB    A,#03H
+000F 4003              JC      ?C0023
+                                           ; SOURCE LINE # 108
+0011 7F03              MOV     R7,#03H
+0013 22                RET     
+                                           ; SOURCE LINE # 109
+0014         ?C0023:
+                                           ; SOURCE LINE # 113
+0014 E4                CLR     A
+0015 900000      R     MOV     DPTR,#i
+0018 F0                MOVX    @DPTR,A
+0019         ?C0025:
+0019 900000      R     MOV     DPTR,#i
+001C E0                MOVX    A,@DPTR
+001D FF                MOV     R7,A
+001E C3                CLR     C
+001F 9408              SUBB    A,#08H
+0021 5050              JNC     ?C0026
+                                           ; SOURCE LINE # 114
+0023 EF                MOV     A,R7
+0024 2427              ADD     A,#027H
+0026 FF                MOV     R7,A
+0027 E4                CLR     A
+0028 33                RLC     A
+0029 FE                MOV     R6,A
+002A 120000      E     LCALL   _Memory_ReadByte
+002D 900000      R     MOV     DPTR,#i
+0030 E0                MOVX    A,@DPTR
+0031 FE                MOV     R6,A
+0032 2400        R     ADD     A,#LOW last_data
+0034 F582              MOV     DPL,A
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 16  
+
+0036 E4                CLR     A
+0037 3400        R     ADDC    A,#HIGH last_data
+0039 F583              MOV     DPH,A
+003B EF                MOV     A,R7
+003C F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 115
+003D EE                MOV     A,R6
+003E 245A              ADD     A,#05AH
+0040 FF                MOV     R7,A
+0041 7400        R     MOV     A,#LOW key
+0043 2E                ADD     A,R6
+0044 F582              MOV     DPL,A
+0046 E4                CLR     A
+0047 3400        R     ADDC    A,#HIGH key
+0049 F583              MOV     DPH,A
+004B E0                MOVX    A,@DPTR
+004C FD                MOV     R5,A
+004D 7C00              MOV     R4,#00H
+004F 120000      E     LCALL   _write_data_sequential
+                                           ; SOURCE LINE # 116
+0052 900000      R     MOV     DPTR,#i
+0055 E0                MOVX    A,@DPTR
+0056 FE                MOV     R6,A
+0057 2462              ADD     A,#062H
+0059 FF                MOV     R7,A
+005A 7400        R     MOV     A,#LOW last_data
+005C 2E                ADD     A,R6
+005D F582              MOV     DPL,A
+005F E4                CLR     A
+0060 3400        R     ADDC    A,#HIGH last_data
+0062 F583              MOV     DPH,A
+0064 E0                MOVX    A,@DPTR
+0065 FD                MOV     R5,A
+0066 7C00              MOV     R4,#00H
+0068 120000      E     LCALL   _write_data_sequential
+                                           ; SOURCE LINE # 117
+006B 900000      R     MOV     DPTR,#i
+006E E0                MOVX    A,@DPTR
+006F 04                INC     A
+0070 F0                MOVX    @DPTR,A
+0071 80A6              SJMP    ?C0025
+0073         ?C0026:
+                                           ; SOURCE LINE # 119
+0073 120000      E     LCALL   BC3_encrypt_k_sequential
+                                           ; SOURCE LINE # 121
+0076 E4                CLR     A
+0077 900000      R     MOV     DPTR,#i
+007A F0                MOVX    @DPTR,A
+007B         ?C0028:
+007B 900000      R     MOV     DPTR,#i
+007E E0                MOVX    A,@DPTR
+007F FF                MOV     R7,A
+0080 C3                CLR     C
+0081 9408              SUBB    A,#08H
+0083 504B              JNC     ?C0029
+                                           ; SOURCE LINE # 122
+0085 EF                MOV     A,R7
+0086 24AA              ADD     A,#0AAH
+0088 FF                MOV     R7,A
+0089 120000      E     LCALL   _read_data_sequential
+008C 900000      R     MOV     DPTR,#i
+008F E0                MOVX    A,@DPTR
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 17  
+
+0090 FE                MOV     R6,A
+0091 2400        R     ADD     A,#LOW last_data
+0093 F582              MOV     DPL,A
+0095 E4                CLR     A
+0096 3400        R     ADDC    A,#HIGH last_data
+0098 F583              MOV     DPH,A
+009A EF                MOV     A,R7
+009B F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 123
+009C 7400        R     MOV     A,#LOW last_data
+009E 2E                ADD     A,R6
+009F F582              MOV     DPL,A
+00A1 E4                CLR     A
+00A2 3400        R     ADDC    A,#HIGH last_data
+00A4 F583              MOV     DPH,A
+00A6 E0                MOVX    A,@DPTR
+00A7 FF                MOV     R7,A
+00A8 7400        E     MOV     A,#LOW encrypted
+00AA 2E                ADD     A,R6
+00AB F582              MOV     DPL,A
+00AD E4                CLR     A
+00AE 3400        E     ADDC    A,#HIGH encrypted
+00B0 F583              MOV     DPH,A
+00B2 E0                MOVX    A,@DPTR
+00B3 6F                XRL     A,R7
+00B4 6012              JZ      ?C0030
+                                           ; SOURCE LINE # 124
+00B6 900000      R     MOV     DPTR,#retries
+00B9 E0                MOVX    A,@DPTR
+00BA 04                INC     A
+00BB F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 125
+00BC E0                MOVX    A,@DPTR
+00BD FD                MOV     R5,A
+00BE 7F57              MOV     R7,#057H
+00C0 7E00              MOV     R6,#00H
+00C2 120000      E     LCALL   _Memory_WriteByte
+                                           ; SOURCE LINE # 126
+00C5 7F02              MOV     R7,#02H
+00C7 22                RET     
+                                           ; SOURCE LINE # 127
+                                           ; SOURCE LINE # 128
+00C8         ?C0030:
+00C8 900000      R     MOV     DPTR,#i
+00CB E0                MOVX    A,@DPTR
+00CC 04                INC     A
+00CD F0                MOVX    @DPTR,A
+00CE 80AB              SJMP    ?C0028
+00D0         ?C0029:
+                                           ; SOURCE LINE # 138
+00D0 900000      R     MOV     DPTR,#retries
+00D3 E0                MOVX    A,@DPTR
+00D4 D3                SETB    C
+00D5 9400              SUBB    A,#00H
+00D7 4009              JC      ?C0032
+                                           ; SOURCE LINE # 139
+00D9 E4                CLR     A
+00DA F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 140
+00DB FD                MOV     R5,A
+00DC 7F57              MOV     R7,#057H
+00DE FE                MOV     R6,A
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 18  
+
+00DF 120000      E     LCALL   _Memory_WriteByte
+                                           ; SOURCE LINE # 141
+00E2         ?C0032:
+                                           ; SOURCE LINE # 143
+00E2 900000      R     MOV     DPTR,#state_mng+06H
+00E5 E0                MOVX    A,@DPTR
+00E6 4402              ORL     A,#02H
+00E8 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 145
+00E9 7F00              MOV     R7,#00H
+                                           ; SOURCE LINE # 146
+00EB         ?C0024:
+00EB 22                RET     
+             ; FUNCTION State_VerifyAuth (END)
+
+             ; FUNCTION State_GetChallenge (BEGIN)
+                                           ; SOURCE LINE # 172
+                                           ; SOURCE LINE # 173
+                                           ; SOURCE LINE # 185
+0000 E4                CLR     A
+0001 900000      R     MOV     DPTR,#i
+0004 F0                MOVX    @DPTR,A
+0005         ?C0033:
+                                           ; SOURCE LINE # 186
+0005 7FEE              MOV     R7,#0EEH
+0007 120000      E     LCALL   _read_data_independent
+000A 900000      R     MOV     DPTR,#i
+000D E0                MOVX    A,@DPTR
+000E FE                MOV     R6,A
+000F 2400        E     ADD     A,#LOW buffer
+0011 F582              MOV     DPL,A
+0013 E4                CLR     A
+0014 3400        E     ADDC    A,#HIGH buffer
+0016 F583              MOV     DPH,A
+0018 EF                MOV     A,R7
+0019 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 187
+001A 7400        E     MOV     A,#LOW buffer
+001C 2E                ADD     A,R6
+001D F582              MOV     DPL,A
+001F E4                CLR     A
+0020 3400        E     ADDC    A,#HIGH buffer
+0022 F583              MOV     DPH,A
+0024 E0                MOVX    A,@DPTR
+0025 FF                MOV     R7,A
+0026 7400        R     MOV     A,#LOW state_mng+07H
+0028 2E                ADD     A,R6
+0029 F582              MOV     DPL,A
+002B E4                CLR     A
+002C 3400        R     ADDC    A,#HIGH state_mng+07H
+002E F583              MOV     DPH,A
+0030 EF                MOV     A,R7
+0031 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 188
+0032 EE                MOV     A,R6
+0033 2427              ADD     A,#027H
+0035 FF                MOV     R7,A
+0036 E4                CLR     A
+0037 33                RLC     A
+0038 FE                MOV     R6,A
+0039 900000      R     MOV     DPTR,#i
+003C E0                MOVX    A,@DPTR
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 19  
+
+003D 2400        E     ADD     A,#LOW buffer
+003F F582              MOV     DPL,A
+0041 E4                CLR     A
+0042 3400        E     ADDC    A,#HIGH buffer
+0044 F583              MOV     DPH,A
+0046 E0                MOVX    A,@DPTR
+0047 FD                MOV     R5,A
+0048 120000      E     LCALL   _Memory_WriteByte
+                                           ; SOURCE LINE # 189
+004B 900000      R     MOV     DPTR,#i
+004E E0                MOVX    A,@DPTR
+004F FE                MOV     R6,A
+0050 2462              ADD     A,#062H
+0052 FF                MOV     R7,A
+0053 7400        E     MOV     A,#LOW buffer
+0055 2E                ADD     A,R6
+0056 F582              MOV     DPL,A
+0058 E4                CLR     A
+0059 3400        E     ADDC    A,#HIGH buffer
+005B F583              MOV     DPH,A
+005D E0                MOVX    A,@DPTR
+005E FD                MOV     R5,A
+005F 7C00              MOV     R4,#00H
+0061 120000      E     LCALL   _write_data_independent
+                                           ; SOURCE LINE # 190
+0064 900000      R     MOV     DPTR,#i
+0067 E0                MOVX    A,@DPTR
+0068 FE                MOV     R6,A
+0069 245A              ADD     A,#05AH
+006B FF                MOV     R7,A
+006C 7400        R     MOV     A,#LOW key
+006E 2E                ADD     A,R6
+006F F582              MOV     DPL,A
+0071 E4                CLR     A
+0072 3400        R     ADDC    A,#HIGH key
+0074 F583              MOV     DPH,A
+0076 E0                MOVX    A,@DPTR
+0077 FD                MOV     R5,A
+0078 7C00              MOV     R4,#00H
+007A 120000      E     LCALL   _write_data_sequential
+                                           ; SOURCE LINE # 191
+007D 900000      R     MOV     DPTR,#i
+0080 E0                MOVX    A,@DPTR
+0081 04                INC     A
+0082 F0                MOVX    @DPTR,A
+0083 E0                MOVX    A,@DPTR
+0084 C3                CLR     C
+0085 9408              SUBB    A,#08H
+0087 5003              JNC     $ + 5H
+0089 020000      R     LJMP    ?C0033
+008C         ?C0034:
+                                           ; SOURCE LINE # 193
+008C 120000      E     LCALL   BC3_encrypt_k_sequential
+                                           ; SOURCE LINE # 195
+008F E4                CLR     A
+0090 900000      R     MOV     DPTR,#i
+0093 F0                MOVX    @DPTR,A
+0094         ?C0036:
+0094 900000      R     MOV     DPTR,#i
+0097 E0                MOVX    A,@DPTR
+0098 FF                MOV     R7,A
+0099 C3                CLR     C
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 20  
+
+009A 9408              SUBB    A,#08H
+009C 5039              JNC     ?C0039
+                                           ; SOURCE LINE # 196
+009E EF                MOV     A,R7
+009F 24AA              ADD     A,#0AAH
+00A1 FF                MOV     R7,A
+00A2 120000      E     LCALL   _read_data_sequential
+00A5 900000      R     MOV     DPTR,#i
+00A8 E0                MOVX    A,@DPTR
+00A9 FE                MOV     R6,A
+00AA 2400        R     ADD     A,#LOW block
+00AC F582              MOV     DPL,A
+00AE E4                CLR     A
+00AF 3400        R     ADDC    A,#HIGH block
+00B1 F583              MOV     DPH,A
+00B3 EF                MOV     A,R7
+00B4 F0                MOVX    @DPTR,A
+                                           ; SOURCE LINE # 197
+00B5 EE                MOV     A,R6
+00B6 2430              ADD     A,#030H
+00B8 FF                MOV     R7,A
+00B9 E4                CLR     A
+00BA 3402              ADDC    A,#02H
+00BC FE                MOV     R6,A
+00BD 900000      R     MOV     DPTR,#i
+00C0 E0                MOVX    A,@DPTR
+00C1 2400        R     ADD     A,#LOW block
+00C3 F582              MOV     DPL,A
+00C5 E4                CLR     A
+00C6 3400        R     ADDC    A,#HIGH block
+00C8 F583              MOV     DPH,A
+00CA E0                MOVX    A,@DPTR
+00CB FD                MOV     R5,A
+00CC 120000      E     LCALL   _Memory_WriteByte
+                                           ; SOURCE LINE # 198
+00CF 900000      R     MOV     DPTR,#i
+00D2 E0                MOVX    A,@DPTR
+00D3 04                INC     A
+00D4 F0                MOVX    @DPTR,A
+00D5 80BD              SJMP    ?C0036
+                                           ; SOURCE LINE # 200
+00D7         ?C0039:
+00D7 22                RET     
+             ; FUNCTION State_GetChallenge (END)
+
+C51 COMPILER V9.01   STATE                                                                 02/22/2017 16:00:37 PAGE 21  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+_Memory_WriteByte. . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+State_GetChallenge . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  block. . . . . . . . . . . . . . . .  AUTO     XDATA  ARRAY    0000H  8
+  i. . . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0008H  1
+BC3_encrypt_k_sequential . . . . . . .  EXTERN   CODE   PROC     -----  -----
+_read_data_independent . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+size_t . . . . . . . . . . . . . . . .  TYPEDEF  -----  U_INT    -----  2
+_write_data_independent. . . . . . . .  EXTERN   CODE   PROC     -----  -----
+state_struct . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  15
+  current. . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0000H  2
+  currentKey . . . . . . . . . . . . .  MEMBER   -----  U_INT    0002H  2
+  currentRecord. . . . . . . . . . . .  MEMBER   -----  U_INT    0004H  2
+  securityState. . . . . . . . . . . .  MEMBER   -----  U_CHAR   0006H  1
+  challenge. . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0007H  8
+_read_data_sequential. . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+pin. . . . . . . . . . . . . . . . . .  EXTERN   XDATA  ARRAY    -----  4
+state_mng. . . . . . . . . . . . . . .  STATIC   XDATA  STRUCT   0000H  15
+HASH_sequential. . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+key. . . . . . . . . . . . . . . . . .  PUBLIC   XDATA  ARRAY    000FH  8
+State_GetCurrentSecurity . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+_write_data_sequential . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+State_GetCurrentRecord . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+encrypted. . . . . . . . . . . . . . .  EXTERN   XDATA  ARRAY    -----  8
+State_Verify . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  retries. . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0000H  1
+  i. . . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0001H  1
+  temp_card. . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0002H  1
+  temp_rd. . . . . . . . . . . . . . .  * REG *  DATA   U_CHAR   0004H  1
+  diff . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0003H  1
+_State_SetCurrentRecord. . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  record_num . . . . . . . . . . . . .  * REG *  DATA   U_INT    0006H  2
+State_GetCurrent . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+State_VerifyAuth . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  retries. . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0000H  1
+  i. . . . . . . . . . . . . . . . . .  AUTO     XDATA  U_CHAR   0001H  1
+  last_data. . . . . . . . . . . . . .  AUTO     XDATA  ARRAY    0002H  8
+_Memory_ReadByte . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+State_GetCurrentChallenge. . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+_State_SetCurrent. . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+  newFile. . . . . . . . . . . . . . .  * REG *  DATA   U_INT    0006H  2
+State_Init . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+buffer . . . . . . . . . . . . . . . .  EXTERN   XDATA  ARRAY    -----  8
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    790    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     23      23
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

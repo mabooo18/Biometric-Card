@@ -1,0 +1,595 @@
+#include "fs.h"
+#include "config.h"
+#include "memory.h"
+#include "state.h"
+
+#define FS_START        CONFIG_FS_START //64
+#define FS_BLOCK_SIZE   CONFIG_FS_BLOCK_SIZE //2
+#define FS_SIZE         CONFIG_FS_SIZE //512
+
+#define FS_HEADER_TAG_OFFSET    0
+#define FS_HEADER_TAG_SIZE      1
+#define FS_HEADER_FID_SIZE      2
+#define FS_HEADER_PARENT_SIZE   2
+#define FS_HEADER_CHILD_SIZE    2
+#define FS_HEADER_SIBLING_SIZE  2
+#define FS_HEADER_BODY_SIZE     2
+
+#define FS_HEADER_SIZE     FS_HEADER_TAG_SIZE + \
+                           FS_HEADER_FID_SIZE + \
+                           FS_HEADER_PARENT_SIZE + \
+                           FS_HEADER_CHILD_SIZE + \
+                           FS_HEADER_SIBLING_SIZE + \
+                           FS_HEADER_BODY_SIZE
+
+#define FS_BODY_HEADER_SIZE             FS_BODY_STRUCTURE_SIZE + \
+					FS_BODY_TYPE_SIZE + \
+					FS_BODY_ACREAD_SIZE + \
+					FS_BODY_ACUPDATE_SIZE + \
+					FS_BODY_SIZE_SIZE
+
+#define FS_HEADER_BODY_OFFSET   FS_HEADER_SIBLING_OFFSET + FS_HEADER_SIBLING_SIZE
+#define FS_HEADER_SIBLING_OFFSET        FS_HEADER_CHILD_OFFSET + FS_HEADER_CHILD_SIZE
+#define FS_HEADER_CHILD_OFFSET  FS_HEADER_PARENT_OFFSET + FS_HEADER_PARENT_SIZE
+#define FS_HEADER_PARENT_OFFSET FS_HEADER_FID_OFFSET + FS_HEADER_FID_SIZE
+#define FS_HEADER_FID_OFFSET    FS_HEADER_TAG_OFFSET + FS_HEADER_TAG_SIZE
+
+#define FS_BODY_STRUCTURE_OFFSET        0
+#define FS_BODY_STRUCTURE_SIZE          1
+#define FS_BODY_TYPE_SIZE               1
+#define FS_BODY_ACREAD_SIZE             1
+#define FS_BODY_ACUPDATE_SIZE           1
+#define FS_BODY_SIZE_SIZE               2
+
+#define FS_BODY_ACREAD_OFFSET           FS_BODY_TYPE_OFFSET + FS_BODY_TYPE_SIZE
+#define FS_BODY_TYPE_OFFSET             FS_BODY_STRUCTURE_OFFSET + FS_BODY_STRUCTURE_SIZE
+#define FS_BODY_ACUPDATE_OFFSET         FS_BODY_ACREAD_OFFSET + FS_BODY_ACREAD_SIZE
+#define FS_BODY_SIZE_OFFSET             FS_BODY_ACUPDATE_OFFSET + FS_BODY_ACUPDATE_SIZE
+#define FS_BODY_BODY_OFFSET             FS_BODY_SIZE_OFFSET + FS_BODY_SIZE_SIZE
+
+
+#define FS_SET_HEADER_BODY(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_BODY_OFFSET, FS_HEADER_BODY_SIZE, (unsigned char *)src)
+#define FS_GET_HEADER_BODY(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_BODY_OFFSET, FS_HEADER_BODY_SIZE, (unsigned char *)dest)
+#define FS_GET_BODY_ACREAD(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_ACREAD_OFFSET, FS_BODY_ACREAD_SIZE, (unsigned char *)dest)
+#define FS_GET_BODY_ACUPDATE(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_ACUPDATE_OFFSET, FS_BODY_ACUPDATE_SIZE, (unsigned char *)dest)
+#define FS_GET_BODY_SIZE(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_SIZE_OFFSET, FS_BODY_SIZE_SIZE, (unsigned char *)dest)
+#define FS_SET_BODY_SIZE(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_SIZE_OFFSET, FS_BODY_SIZE_SIZE, (unsigned char *)src)
+
+#define FS_BLOCKS       FS_SIZE/FS_BLOCK_SIZE //512/2 =256
+#define FS_ALLOC_TABLE_SIZE     (FS_BLOCKS/8)/FS_BLOCK_SIZE //(256/8)/2 =16
+#define FS_ALLOC_TABLE_OFFSET   0
+#define FS_FILE_TABLE_OFFSET    FS_ALLOC_TABLE_OFFSET + FS_ALLOC_TABLE_SIZE //0+16 = 16
+#define FS_FILE_TABLE_SIZE      CONFIG_FS_FILE_TABLE_SIZE/FS_BLOCK_SIZE
+#define FS_FILE_BODY_OFFSET     FS_FILE_TABLE_OFFSET + FS_FILE_TABLE_SIZE
+#define FS_ALLOC_HEADER(address) FSAlloc(CEIL((FS_HEADER_SIZE),FS_BLOCK_SIZE), FS_FILE_TABLE_OFFSET, FS_FILE_BODY_OFFSET, address)
+#define FS_ALLOC_BODY(address, length) FSAlloc(CEIL((FS_BODY_HEADER_SIZE + length),FS_BLOCK_SIZE), FS_FILE_BODY_OFFSET, FS_BLOCKS, address);
+
+#define FS_SET_HEADER_TAG(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_TAG_OFFSET, FS_HEADER_TAG_SIZE, (unsigned char *)src)
+#define FS_GET_HEADER_TAG(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_TAG_OFFSET, FS_HEADER_TAG_SIZE, (unsigned char *)dest)
+#define FS_SET_HEADER_FID(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_FID_OFFSET, FS_HEADER_FID_SIZE, (unsigned char *)src)
+#define FS_SET_HEADER_PARENT(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_PARENT_OFFSET, FS_HEADER_PARENT_SIZE, (unsigned char *)src)
+#define FS_SET_HEADER_CHILD(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_CHILD_OFFSET, FS_HEADER_CHILD_SIZE, (unsigned char *)src)
+#define FS_SET_HEADER_SIBLING(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_SIBLING_OFFSET, FS_HEADER_SIBLING_SIZE, (unsigned char *)src)
+#define FS_GET_HEADER_SIBLING(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_SIBLING_OFFSET, FS_HEADER_SIBLING_SIZE, (unsigned char *)dest)
+#define FS_GET_HEADER_PARENT(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_PARENT_OFFSET, FS_HEADER_PARENT_SIZE, (unsigned char *)dest)
+#define FS_GET_HEADER_FID(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_FID_OFFSET, FS_HEADER_FID_SIZE, (unsigned char *)dest)
+#define FS_GET_HEADER_CHILD(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_CHILD_OFFSET, FS_HEADER_CHILD_SIZE, (unsigned char *)dest)
+#define FS_SET_BODY_BODY(block, length, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_BODY_OFFSET + offset, length, (unsigned char *)src)
+#define FS_GET_BODY_BODY(block, length, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_BODY_OFFSET + offset, length, (unsigned char *)dest)
+#define FS_SET_BODY_STRUCTURE(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_STRUCTURE_OFFSET, FS_BODY_STRUCTURE_SIZE, (unsigned char *)src)
+#define FS_SET_BODY_TYPE(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_TYPE_OFFSET, FS_BODY_TYPE_SIZE, (unsigned char *)src)
+#define FS_SET_BODY_ACREAD(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_ACREAD_OFFSET, FS_BODY_ACREAD_SIZE, (unsigned char *)src)
+#define FS_SET_BODY_ACUPDATE(block, src) Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_ACUPDATE_OFFSET, FS_BODY_ACUPDATE_SIZE, (unsigned char *)src)
+
+#define CEIL(A,B)       ((A%B)==0 ? (A/B) : (A/B + 1))
+
+unsigned int FS_Init()
+{
+  FSSelectMF();
+
+  return FS_OK;
+}
+
+
+unsigned int FSSelectMF()
+{
+  State_SetCurrent(FS_FILE_TABLE_OFFSET);
+
+  return 0;
+}
+
+unsigned  int FSAlloc(unsigned int size_alloc, unsigned int startBlock, unsigned int endBlock, unsigned int * address)
+{
+  unsigned int i, j, k, m, n;
+  unsigned int startbyte, startbit, startSearchBit;
+  unsigned int stopbyte, stopbit, stopSearchBit;
+  unsigned int tempAddress;
+  unsigned int free = 0;
+  unsigned char temp = 0;
+  bit cont = 0;
+
+  for(i = (startBlock/8); i < (endBlock/8); i++) {
+
+    //read allocation table (byte -> 8 block)
+    temp = Memory_ReadByte(FS_START + FS_ALLOC_TABLE_OFFSET + i);
+
+    startSearchBit = (i == startBlock/8) ? startBlock%8 : 0;
+    stopSearchBit  = (i == (endBlock/8)-1) ? endBlock%8 : 8;
+
+    // bit per bit operation
+    for(j = startSearchBit; j < stopSearchBit; j++) {
+
+      //check if MSB = 0
+      if((temp & 0x80) == 0) {
+
+        //check if this the first 0
+        if(cont == 0) {
+
+          //make a mark and save the address
+          cont = 1;
+          tempAddress = (i*8)+j;
+          startbyte = i;
+          startbit = j;
+
+        }
+
+        //increment free block
+        free ++;
+
+        //if free block is sufficient
+        if(free == size_alloc) {
+
+          stopbyte = i;
+          stopbit = j;
+
+          k = startbyte;
+          while(k <= stopbyte) {
+
+            m = 0;
+            n = 8;
+
+            if(k == startbyte) m = startbit;
+            if(k == stopbyte) n = stopbit;
+
+            for(m;m<=n;m++){
+              temp = Memory_ReadByte(FS_START + FS_ALLOC_TABLE_OFFSET + k);
+              temp = temp | ((unsigned char)128>>m);
+              Memory_WriteByte(FS_START + FS_ALLOC_TABLE_OFFSET + k, temp);
+            }
+
+            k++;
+
+          }
+
+          //return the first address of free block
+          *address = tempAddress;
+
+          return FS_OK;
+
+        }
+
+      }
+      else {
+
+        //if the MSB == 1 and continue
+        if(cont == 1) {
+
+          cont = 0;
+          free = 0;
+
+        }
+
+      }
+
+      temp = temp << 1;
+
+    }
+
+  }
+
+  return FS_ERROR_INSUFFICIENT_SPACE;
+
+}
+
+unsigned char FS_GetAC(unsigned int op)
+{
+  unsigned int header, body;
+  unsigned char ac;
+
+  header = State_GetCurrent();
+
+  FS_GET_HEADER_BODY(header,&body);
+
+  if(op == FS_OP_READ)
+    {
+      FS_GET_BODY_ACREAD(body, &ac);
+    }
+  else
+    {
+      FS_GET_BODY_ACUPDATE(body, &ac);
+    }
+
+  return ac;
+}
+
+unsigned  int FSFormat()
+{
+
+  unsigned int i;
+  unsigned int headerBlock;
+  unsigned int none16 = FS_NONE;
+  unsigned int fidMF  = 0x3F00;
+  unsigned char  tagMF  = FS_TAG_MF;
+  unsigned  int status;
+
+  //Initialize Block Allocation Table
+  for(i=FS_ALLOC_TABLE_OFFSET; i<(FS_FILE_TABLE_OFFSET*FS_BLOCK_SIZE); i++){ //i =0 ; i<(16*2 =32)
+    Memory_WriteByte(FS_START + i, 0); //64
+	}
+  status = FS_ALLOC_HEADER(&headerBlock);
+
+  if(status == FS_OK && headerBlock == FS_FILE_TABLE_OFFSET){
+    FS_SET_HEADER_TAG(headerBlock, &tagMF);
+    FS_SET_HEADER_FID(headerBlock, &fidMF);
+    FS_SET_HEADER_PARENT(headerBlock, &headerBlock);
+    FS_SET_HEADER_CHILD(headerBlock, &none16);
+    FS_SET_HEADER_SIBLING(headerBlock, &none16);
+
+    return FS_OK;
+  }
+  else {
+    return FS_ERROR;
+  }
+}
+
+
+unsigned int FSSearchFID(unsigned int fid)
+{
+
+  unsigned int current, parent, sibling, child;
+  unsigned int tempFID;
+  unsigned char  tempTag;
+
+  current = State_GetCurrent();
+
+  //check parent
+  FS_GET_HEADER_PARENT(current, &parent);
+
+  FS_GET_HEADER_FID(parent, &tempFID);
+
+  if(tempFID == fid){
+
+    return parent;
+  }
+
+  //check sibling
+  FS_GET_HEADER_CHILD(parent, &sibling);
+
+  while(sibling != FS_NONE) {
+
+    FS_GET_HEADER_FID(sibling, &tempFID);
+
+    if(tempFID == fid){
+
+      return sibling;
+    }
+
+    FS_GET_HEADER_SIBLING(sibling, &sibling);
+
+  }
+
+  //check child
+
+  FS_GET_HEADER_TAG(current, &tempTag);
+
+  if(tempTag == FS_TAG_DF || tempTag == FS_TAG_MF) {
+
+    FS_GET_HEADER_CHILD(current, &child);
+
+    while (child != FS_NONE)
+    {
+
+      FS_GET_HEADER_FID(child, &tempFID);
+
+      if(tempFID == fid){
+        return child;
+      }
+
+      FS_GET_HEADER_SIBLING(child, &child);
+
+    }
+  }
+
+  return FS_NONE;
+
+}
+
+unsigned int FS_SelectFID(unsigned int fid)
+{
+  unsigned int file;
+
+  file = FSSearchFID(fid);
+
+  if( file == FS_NONE )
+    return FS_ERROR_NOT_FOUND;
+
+  State_SetCurrent(file);
+
+  return FS_OK;
+}
+
+unsigned char FS_CheckAC(unsigned int op)
+{
+  unsigned char ac;
+  unsigned char current = State_GetCurrentSecurity();
+
+  ac = FS_GetAC(op);
+
+  if( current>=ac )
+    return FS_OK;
+  else
+    return FS_ERROR_SECURITY_STATUS;
+}
+
+unsigned  int FSAccessBinary(unsigned  int op, unsigned  int offset, unsigned  int length, unsigned char *databyte)
+{
+
+  unsigned int header, body;
+
+  header = State_GetCurrent();
+  FS_GET_HEADER_BODY(header,&body);
+	
+  if(op == FS_OP_READ){
+    if(length == 0)
+      FS_GET_BODY_SIZE(body, &length);
+
+    if(length > 256)
+      length = 256;
+
+    FS_GET_BODY_BODY(body, length, databyte);
+  }
+  else if(op == FS_OP_UPDATE){
+    FS_SET_BODY_BODY(body, length, databyte);
+  }
+  return length;
+
+}
+
+unsigned  int FSCreateHeader(unsigned char tag, unsigned int fid, unsigned int * addr)
+{
+
+  unsigned int      current, currentChild, currentChildTemp;
+  unsigned int      headerBlock;
+  unsigned int      none16 = (unsigned int)FS_NONE;
+  unsigned int           status;
+
+  current = State_GetCurrent();
+
+  //alloc some space for header
+  status = FS_ALLOC_HEADER(&headerBlock);
+
+  if(status == FS_ERROR_INSUFFICIENT_SPACE){
+    return status;
+  }
+
+  //update header
+  FS_SET_HEADER_TAG(headerBlock, &tag);
+  FS_SET_HEADER_FID(headerBlock, &fid);
+  FS_SET_HEADER_PARENT(headerBlock, &current);
+  FS_SET_HEADER_CHILD(headerBlock, &none16);
+  FS_SET_HEADER_SIBLING(headerBlock, &none16);
+
+  //update parent/sibling DF header
+  FS_GET_HEADER_CHILD(current, &currentChild);
+
+  if (currentChild == none16) {
+    FS_SET_HEADER_CHILD(current, &headerBlock);
+  }
+  else {
+
+    while (currentChild != FS_NONE){
+
+      currentChildTemp = currentChild;
+
+      FS_GET_HEADER_SIBLING(currentChild, &currentChild);
+
+    }
+
+    currentChild = currentChildTemp;
+
+    FS_SET_HEADER_SIBLING(currentChild, &headerBlock);
+
+  }
+
+  *addr = headerBlock;
+
+  return FS_OK;
+
+}
+
+/*unsigned  int FSCreateBodyEF(struct EF_st * desc, unsigned int * addr)
+{
+  unsigned int bodyBlock;
+
+  //alloc body
+  FS_ALLOC_BODY(&bodyBlock, desc->file_size);
+
+  FS_SET_BODY_STRUCTURE(bodyBlock, &(desc->structure));
+  FS_SET_BODY_TYPE(bodyBlock, &(desc->type));
+  FS_SET_BODY_ACREAD(bodyBlock, &(desc->ACRead));
+  FS_SET_BODY_ACUPDATE(bodyBlock, &(desc->ACUpdate));
+  FS_SET_BODY_SIZE(bodyBlock, &(desc->file_size));
+
+  *addr = bodyBlock;
+
+  return FS_OK;
+
+}*/
+
+// edited create body EF (only one byte ac is needed)
+
+unsigned  int FSCreateBodyEF(struct EF_st * desc, unsigned int * addr)
+{
+  unsigned int bodyBlock;
+
+  //alloc body
+  FS_ALLOC_BODY(&bodyBlock, desc->file_size);
+
+  FS_SET_BODY_STRUCTURE(bodyBlock, &(desc->structure));
+  FS_SET_BODY_TYPE(bodyBlock, &(desc->type));
+  FS_SET_BODY_ACREAD(bodyBlock, &(desc->ACRead));
+ // FS_SET_BODY_ACUPDATE(bodyBlock, &(desc->ACUpdate));
+  FS_SET_BODY_SIZE(bodyBlock, &(desc->file_size));
+
+  *addr = bodyBlock;
+
+  return FS_OK;
+
+}
+
+unsigned  int FSCreateFile(unsigned int tag, void * desc)
+{
+  unsigned int header, body;
+  unsigned int current;
+  unsigned int fid;
+  unsigned char  currentTag;
+  int status;
+
+  if(tag == FS_TAG_DF){
+    fid = ((struct DF_st *)desc)->FID;
+  }
+  else if (tag == FS_TAG_EF) {
+    fid = ((struct EF_st *)desc)->FID;
+  }
+
+
+  //check if current is DF
+  current = State_GetCurrent();
+
+  FS_GET_HEADER_TAG(current, (unsigned char *)&currentTag);
+
+  if(currentTag == FS_TAG_EF){
+
+    return FS_ERROR;
+  }
+
+  //check consistency
+
+  //check all FID of current DF
+  status = FSSearchFID(fid);
+
+  if(status != FS_NONE){
+
+    return FS_ERROR_DUPLICATE_FID;
+  }
+
+  //create file header
+  status = FSCreateHeader((unsigned char)tag, fid, &header);
+
+  if (status != FS_OK){
+
+    return status;
+  }
+
+  //create file body
+  if(tag == FS_TAG_EF) {
+    status = FSCreateBodyEF((struct EF_st *)desc, &body);
+
+    if (status != FS_OK){
+
+      return status;
+    }
+
+    FS_SET_HEADER_BODY(header, &body);
+
+  }
+
+  return 0;
+}
+
+
+unsigned  int FSFree(unsigned int address, unsigned int length)
+{
+
+  unsigned int startbyte, stopbyte;
+  unsigned char startbit, stopbit;
+  unsigned char startXOR, stopXOR;
+  unsigned char temp, tempXOR;
+  unsigned  int i,j;
+
+  startbyte = address/8;
+  startbit = address%8;
+  stopbyte = (address+length)/8;
+  stopbit = (address+length)%8;
+
+  for(i = startbyte; i <= stopbyte; i++){
+    temp = Memory_ReadByte(FS_START + FS_ALLOC_TABLE_OFFSET + i);
+
+    startXOR = (i == startbyte) ? startbit : 0;
+    stopXOR  = (i == stopbyte) ? stopbit : 8;
+
+    tempXOR = 0;
+
+    for(j = startXOR; j < stopXOR; j++)
+      tempXOR = tempXOR ^ (128 >> j);
+
+    temp = temp ^ tempXOR;
+
+    Memory_WriteByte(FS_START + FS_ALLOC_TABLE_OFFSET + i, temp);
+  }
+  return FS_OK;
+
+}
+
+unsigned  int FSDeleteFile(unsigned int fid)
+{
+
+  unsigned int header, parent, sibling, siblingBefore, siblingNext;
+  unsigned int body, bodySize;
+  unsigned char  tag;
+
+  //check FID
+  header = FSSearchFID(fid);
+
+  if(header == FS_NONE){
+    return FS_ERROR_NOT_FOUND;
+  }
+
+  //if DF, make sure it doesn't have any child
+
+  //if first child, untie from parent, and change parent's child to sibling (if any)
+  FS_GET_HEADER_PARENT(header, &parent);
+
+  FS_GET_HEADER_CHILD(parent, &sibling);
+
+  if(sibling == header) {
+    FS_GET_HEADER_SIBLING(header, &sibling);
+    FS_SET_HEADER_CHILD(parent, &sibling);
+  }
+  //else, change the sibling before to chain to sibling after
+  else {
+
+    while(sibling != header) {
+      siblingBefore = sibling;
+      FS_GET_HEADER_SIBLING(sibling, &sibling);
+    }
+
+    FS_GET_HEADER_SIBLING(header, &siblingNext);
+    FS_SET_HEADER_SIBLING(siblingBefore, &siblingNext);
+  }
+
+  //free body
+  FS_GET_HEADER_TAG(header, &tag);
+
+  if(tag == FS_TAG_EF){
+    FS_GET_HEADER_BODY(header, &body);
+    FS_GET_BODY_SIZE(body, &bodySize);
+    FSFree(body, CEIL(((FS_BODY_HEADER_SIZE)+bodySize),FS_BLOCK_SIZE));
+  }
+
+  //free header
+  FSFree(header, CEIL((FS_HEADER_SIZE),FS_BLOCK_SIZE));
+
+
+  return FS_OK;
+}
