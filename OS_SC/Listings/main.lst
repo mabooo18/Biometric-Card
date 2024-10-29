@@ -1,0 +1,821 @@
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c LARGE BROWSE DEBUG OBJECTEXTEND CODE LISTINCLUDE SYMBOLS PRINT(.\Lis
+                    -tings\main.lst) PREPRINT(.\Listings\main.i) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg51.h>  
+   1      =1  /*--------------------------------------------------------------------------
+   2      =1  REG51.H
+   3      =1  
+   4      =1  Header file for generic 80C51 and 80C31 microcontroller.
+   5      =1  Copyright (c) 1988-2002 Keil Elektronik GmbH and Keil Software, Inc.
+   6      =1  All rights reserved.
+   7      =1  --------------------------------------------------------------------------*/
+   8      =1  
+   9      =1  #ifndef __REG51_H__
+  10      =1  #define __REG51_H__
+  11      =1  
+  12      =1  /*  BYTE Register  */
+  13      =1  sfr P0   = 0x80;
+  14      =1  sfr P1   = 0x90;
+  15      =1  sfr P2   = 0xA0;
+  16      =1  sfr P3   = 0xB0;
+  17      =1  sfr PSW  = 0xD0;
+  18      =1  sfr ACC  = 0xE0;
+  19      =1  sfr B    = 0xF0;
+  20      =1  sfr SP   = 0x81;
+  21      =1  sfr DPL  = 0x82;
+  22      =1  sfr DPH  = 0x83;
+  23      =1  sfr PCON = 0x87;
+  24      =1  sfr TCON = 0x88;
+  25      =1  sfr TMOD = 0x89;
+  26      =1  sfr TL0  = 0x8A;
+  27      =1  sfr TL1  = 0x8B;
+  28      =1  sfr TH0  = 0x8C;
+  29      =1  sfr TH1  = 0x8D;
+  30      =1  sfr IE   = 0xA8;
+  31      =1  sfr IP   = 0xB8;
+  32      =1  sfr SCON = 0x98;
+  33      =1  sfr SBUF = 0x99;
+  34      =1  
+  35      =1  
+  36      =1  /*  BIT Register  */
+  37      =1  /*  PSW   */
+  38      =1  sbit CY   = 0xD7;
+  39      =1  sbit AC   = 0xD6;
+  40      =1  sbit F0   = 0xD5;
+  41      =1  sbit RS1  = 0xD4;
+  42      =1  sbit RS0  = 0xD3;
+  43      =1  sbit OV   = 0xD2;
+  44      =1  sbit P    = 0xD0;
+  45      =1  
+  46      =1  /*  TCON  */
+  47      =1  sbit TF1  = 0x8F;
+  48      =1  sbit TR1  = 0x8E;
+  49      =1  sbit TF0  = 0x8D;
+  50      =1  sbit TR0  = 0x8C;
+  51      =1  sbit IE1  = 0x8B;
+  52      =1  sbit IT1  = 0x8A;
+  53      =1  sbit IE0  = 0x89;
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 2   
+
+  54      =1  sbit IT0  = 0x88;
+  55      =1  
+  56      =1  /*  IE   */
+  57      =1  sbit EA   = 0xAF;
+  58      =1  sbit ES   = 0xAC;
+  59      =1  sbit ET1  = 0xAB;
+  60      =1  sbit EX1  = 0xAA;
+  61      =1  sbit ET0  = 0xA9;
+  62      =1  sbit EX0  = 0xA8;
+  63      =1  
+  64      =1  /*  IP   */ 
+  65      =1  sbit PS   = 0xBC;
+  66      =1  sbit PT1  = 0xBB;
+  67      =1  sbit PX1  = 0xBA;
+  68      =1  sbit PT0  = 0xB9;
+  69      =1  sbit PX0  = 0xB8;
+  70      =1  
+  71      =1  /*  P3  */
+  72      =1  sbit RD   = 0xB7;
+  73      =1  sbit WR   = 0xB6;
+  74      =1  sbit T1   = 0xB5;
+  75      =1  sbit T0   = 0xB4;
+  76      =1  sbit INT1 = 0xB3;
+  77      =1  sbit INT0 = 0xB2;
+  78      =1  sbit TXD  = 0xB1;
+  79      =1  sbit RXD  = 0xB0;
+  80      =1  
+  81      =1  /*  SCON  */
+  82      =1  sbit SM0  = 0x9F;
+  83      =1  sbit SM1  = 0x9E;
+  84      =1  sbit SM2  = 0x9D;
+  85      =1  sbit REN  = 0x9C;
+  86      =1  sbit TB8  = 0x9B;
+  87      =1  sbit RB8  = 0x9A;
+  88      =1  sbit TI   = 0x99;
+  89      =1  sbit RI   = 0x98;
+  90      =1  
+  91      =1  #endif
+   2          #include "hal.h"
+   1      =1  #ifndef HAL_H
+   2      =1  #define HAL_H
+   3      =1  
+   4      =1  void init_HW(void);
+   5      =1  #endif
+   3          #include "transmission.h"
+   1      =1  #ifndef TRANSMISSION_HEADER_FILE
+   2      =1  #define TRANSMISSION_HEADER_FILE 1
+   3      =1  
+   4      =1  extern unsigned char header[5];
+   5      =1  extern unsigned int sw;
+   6      =1  
+   7      =1  void send_ATR();
+   8      =1  void send_ATR_direct();
+   9      =1  void Transmission_GetHeader(); 
+  10      =1  void Transmission_SendSW();
+  11      =1  void Transmission_SendDebug();
+  12      =1  char Transmission_GetByte ();
+  13      =1  void Transmission_SendByte (char c);
+  14      =1  
+  15      =1  
+  16      =1  #endif
+   4          #include "response.h"
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 3   
+
+   1      =1  #ifndef RESPONSE_H
+   2      =1  
+   3      =1  #define RESPONSE_H
+   4      =1  
+   5      =1  typedef enum
+   6      =1  {
+   7      =1    Response_OK,
+   8      =1    Response_Normal,
+   9      =1          Response_Auth_Success,
+  10      =1    Response_Warning_Unchanged,
+  11      =1    Response_Warning_DataCorrupt,
+  12      =1    Response_Warning_EndOfFile,
+  13      =1    Response_Warning_FileDeactivated,
+  14      =1    Response_Warning_Changed,
+  15      =1    Response_Warning_FilledUp,
+  16      =1    Response_Warning_Counter,
+  17      =1    Response_Error_Unchanged,
+  18      =1    Response_Error_Changed,
+  19      =1    Response_WrongLength,
+  20      =1    Response_NotSupported,
+  21      =1    Response_NotSupported_LogicalChannel,
+  22      =1    Response_NotSupported_SecureMessaging,
+  23      =1    Response_NotSupported_LastCommandExpected,
+  24      =1    Response_NotSupported_CommandChain,
+  25      =1    Response_CmdNotAllowed,
+  26      =1    Response_CmdNotAllowed_Incompatible_FS,
+  27      =1    Response_CmdNotAllowed_SecurityStatus,
+  28      =1    Response_CmdNotAllowed_AuthBlocked,
+  29      =1    Response_CmdNotAllowed_RefDataNotUsable,
+  30      =1    Response_CmdNotAllowed_ConditionNotSatisfied,
+  31      =1    Response_CmdNotAllowed_NoCurrentEF,
+  32      =1    Response_CmdNotAllowed_ExpectSecureMsg,
+  33      =1    Response_CmdNotAllowed_IncorrectSecureMsg,
+  34      =1    Response_WrongP1P2,
+  35      =1    Response_WrongP1P2_IncorrectData,
+  36      =1    Response_WrongP1P2_FuncNotSupported,
+  37      =1    Response_WrongP1P2_FileNotFound,
+  38      =1    Response_WrongP1P2_RecordNotFound,
+  39      =1    Response_WrongP1P2_NotEnoughMem,
+  40      =1    Response_WrongP1P2_NCInconsistentTLV,
+  41      =1    Response_WrongP1P2_IncorrectP1P2,
+  42      =1    Response_WrongP1P2_NCInconsistentP1P2,
+  43      =1    Response_WrongP1P2_RefDataNotFound,
+  44      =1    Response_WrongP1P2_FileExist,
+  45      =1    Response_WrongP1P2_DFNameExist,
+  46      =1    Response_INSNotSupported,
+  47      =1    Response_CLANotSupported,
+  48      =1    Response_FatalError,
+  49      =1  } rspn_type;
+  50      =1  
+  51      =1  
+  52      =1  void Response_SetSW(unsigned char response, unsigned char extra);
+  53      =1  #endif
+   5          #include "command.h"
+   1      =1  #ifndef COMMAND_H
+   2      =1  
+   3      =1  #define COMMAND_H
+   4      =1  
+   5      =1  /* Command for CRYPTOPROCESSOR */
+   6      =1  //#define DEBUG_ECDH        0x65
+   7      =1  
+   8      =1  /* Command for Debug */
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 4   
+
+   9      =1  #define DEBUG_WRITE        0x02
+  10      =1  #define DEBUG_READ         0x04
+  11      =1  #define DEBUG_GETCURRENT   0x22
+  12      =1  #define DEBUG_GETSECURITY  0x24
+  13      =1  #define DEBUG_GETCHALLENGE 0x28
+  14      =1  #define DEBUG_ENCRYPT      0x26
+  15      =1  #define DEBUG_FORMAT       0x0a
+  16      =1  #define Debug_SHM          0x06
+  17      =1  
+  18      =1  /* File Operation */
+  19      =1  #define ISO_SELECT              0xA4      ///< ISO 7816-4 SELECT Instruction code
+  20      =1  #define ISO_READ_BINARY         0xB0      ///< ISO 7816-4 READ BINARY Instruction code
+  21      =1  #define ISO_UPDATE_BINARY       0xD6      ///< ISO 7816-4 UPDATE BINARY Instruction code
+  22      =1  #define ISO_ERASEBINARY                 0x0E
+  23      =1  #define ISO_WRITEBINARY                 0xD0
+  24      =1  #define ISO_READRECORD                  0xB2      ///< ISO 7816-4 READ RECORD Instruction code
+  25      =1  #define ISO_UPDATE_RECORD               0xDC      ///< ISO 7816-4 UPDATE RECORD Instruction code
+  26      =1  #define ISO_APPEND_RECORD               0xE2      ///< ISO 7816-4 APPEND RECORD Instruction code
+  27      =1  #define ISO_WRITERECORD                 0xD2
+  28      =1  
+  29      =1  /* File Management */
+  30      =1  #define ISO_CREATE_FILE         0xE0    ///< ISO 7816-4 CREATE FILE Instruction code
+  31      =1  #define ISO_DELETE_FILE         0xE4    ///< ISO 7816-4 DELETE FILE Instruction code
+  32      =1  
+  33      =1  /* Security */
+  34      =1  #define ISO_VERIFY              0x20    ///< ISO 7816-4 VERIFY Instruction code
+  35      =1  #define ISO_EXT_AUTH            0x82    ///< ISO 7816-4 EXTERNAL_AUTH Instruction code
+  36      =1  #define ISO_INT_AUTH            0x88    ///< ISO 7816-4 INTERNAL_AUTH Instruction code
+  37      =1  #define ISO_GET_CHALLENGE               0x84    //!< INS byte: Get Challenge
+  38      =1  
+  39      =1  /* Program Code Management */
+  40      =1  #define ISO_LOAD                0xDC      ///< ISO 7816-4 LOAD Instruction code
+  41      =1  #define ISO_INSTALL             0xDC      ///< ISO 7816-4 INSTALL Instruction code
+  42      =1  #define ISO_DELETE              0xDC      ///< ISO 7816-4 DELETE Instruction code
+  43      =1  
+  44      =1  /* Data Transmission */
+  45      =1  #define ISO_GET_RESPONSE        0xC0    ///< ISO 7816-4 GET RESPONSE Instruction code
+  46      =1  
+  47      =1  void Command_Write();
+  48      =1  void Command_Read();
+  49      =1  void Command_Format();
+  50      =1  void Command_Encrypt();
+  51      =1  void Command_GetCurrentChallenge();
+  52      =1  void Command_GetChallenge();
+  53      =1  void Command_ReadSHM();
+  54      =1  void Command_Interpreter();
+  55      =1  
+  56      =1  unsigned int fibo(unsigned int i);
+  57      =1  #endif
+   6          #include "i2c.h"
+   1      =1  #ifndef I2C_H
+   2      =1  #define I2C_H
+   3      =1  
+   4      =1  #define I2C_DELAY 0x01  /* For delay i2c bus */
+   5      =1  
+   6      =1  void I2C_delay(void);
+   7      =1  void I2C_start(void);
+   8      =1  void I2C_stop(void);
+   9      =1  bit I2C_write(unsigned char dat);
+  10      =1  unsigned char I2C_read(void);
+  11      =1  
+  12      =1  #endif
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 5   
+
+   7          #include "krisna.h"
+   1      =1  
+   2      =1  #ifndef KRISNA_H
+   3      =1  #define KRISNA_H
+   4      =1  
+   5      =1  #define addr_xi_ECC               0x00
+   6      =1  #define addr_yi_ECC               0x1E
+   7      =1  #define addr_xo_ECC               0xB2
+   8      =1  #define addr_yo_ECC               0xD0
+   9      =1  #define addr_k_ECC                0x3C
+  10      =1  #define  addr_RNG                         0xEE
+  11      =1  #define  addr_k_BC3       0x5A
+  12      =1  #define addr_dati_BC3   0x62
+  13      =1  #define addr_dati_HASH  0x6A
+  14      =1  #define addr_dato_HASH  0x8A
+  15      =1  #define addr_dato_BC3   0xAA
+  16      =1  
+  17      =1  sfr COPBC3              = 0xE8;
+  18      =1  sfr COPSTATR    = 0xF8;
+  19      =1  sfr COPMOSI     = 0xF9;
+  20      =1  sfr COPMISO     = 0xFA;
+  21      =1  sfr COPTH               = 0xFB;
+  22      =1  sfr COPSRC              = 0xFC;
+  23      =1  sfr COPDST              = 0xFD;
+  24      =1  sfr COPCOM              = 0xFF;
+  25      =1  
+  26      =1  sbit s_Empty = 0xF8;
+  27      =1  sbit s_Full = 0xF9;
+  28      =1  sbit s_TR = 0xFA;
+  29      =1  sbit s_ACK = 0xFB;
+  30      =1  sbit s_SM = 0xFC;
+  31      =1  sbit s_HASH = 0xFD;
+  32      =1  sbit s_BC3 = 0xFE;
+  33      =1  sbit s_ECC = 0xFF;
+  34      =1  
+  35      =1  sbit s_Done = 0xD8;
+  36      =1  sbit s_6 = 0xD9;
+  37      =1  sbit s_5 = 0xDA;
+  38      =1  sbit s_4 = 0xDB;
+  39      =1  sbit s_3 = 0xDC;
+  40      =1  sbit s_2 = 0xDD;
+  41      =1  sbit s_1 = 0xDE;
+  42      =1  sbit s_0 = 0xDF;
+  43      =1  
+  44      =1  void coprocessor_init();
+  45      =1  
+  46      =1  
+  47      =1  void copy_data_block_sequential(unsigned char source_address, unsigned char destination_address, unsigned 
+             -int length);
+  48      =1  
+  49      =1  void copy_data_block_independent(unsigned char source_address, unsigned char destination_address, unsigned
+             - int length);
+  50      =1  
+  51      =1  void write_data_independent(unsigned char destination_address, unsigned copdata);
+  52      =1  
+  53      =1  
+  54      =1  void write_data_sequential(unsigned char destination_address, unsigned copdata);
+  55      =1  
+  56      =1  void write_block_sequential(unsigned copdata);
+  57      =1  
+  58      =1          
+  59      =1  unsigned read_data_sequential(unsigned char source_address);
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 6   
+
+  60      =1  
+  61      =1  unsigned read_data_independent(unsigned char source_address);
+  62      =1  
+  63      =1  void copy_data_sequential(unsigned char source_address, unsigned char destination_address);
+  64      =1  
+  65      =1  void copy_data_independent(unsigned char source_address, unsigned char destination_address);
+  66      =1  
+  67      =1  void ECC_sequential();
+  68      =1  
+  69      =1  void ECC_independent();
+  70      =1  
+  71      =1  void HASH_sequential();
+  72      =1  
+  73      =1  void HASH_independent();
+  74      =1  
+  75      =1  void BC3_encrypt_k_sequential();
+  76      =1  
+  77      =1  void BC3_encrypt_k_independent();
+  78      =1  
+  79      =1  void BC3_encrypt_sequential();
+  80      =1  
+  81      =1  void BC3_encrypt_independent();
+  82      =1  
+  83      =1  void BC3_decrypt_k_independent();
+  84      =1  
+  85      =1  void BC3_decrypt_k_sequential();
+  86      =1  
+  87      =1  void BC3_decrypt_independent();
+  88      =1  
+  89      =1  void BC3_decrypt_sequential();
+  90      =1  #endif
+   8          #include "memory.h"
+   1      =1  #ifndef __MEMORY_H__
+   2      =1  #define __MEMORY_H__
+   3      =1  
+   4      =1  extern char eeprom_ID_write;
+   5      =1  extern char eeprom_ID_read;
+   6      =1  extern char LSB_address;
+   7      =1  
+   8      =1  unsigned char Memory_ReadByte(unsigned int address);
+   9      =1  unsigned char Memory_ReadByte_Ext(unsigned int address);
+  10      =1  void Memory_WriteByte_Ext(unsigned int address, char data_to_send);
+  11      =1  void Memory_WriteByte(unsigned int address, char data_to_send);
+  12      =1  int Memory_ReadBlock(unsigned int address, unsigned int read_size, unsigned char * databyte);
+  13      =1  int Memory_WriteBlock(unsigned int address, unsigned int write_size, unsigned char * databyte);
+  14      =1  #endif
+   9          #include "state.h"
+   1      =1  #ifndef STATE_H
+   2      =1  #define STATE_H
+   3      =1  
+   4      =1  //! Length of key in octets.
+   5      =1  #define CRYPT_KEY_LEN   16
+   6      =1  //! Length of cipher block in octets.
+   7      =1  #define CRYPT_BLOCK_LEN 8
+   8      =1  //! Single block encryption function.
+   9      =1  #define crypt_enc(v,k) BC3_enc((unsigned long int *)(v),(unsigned long int *)(k))
+  10      =1  //! Single block decryption function.
+  11      =1  #define crypt_dec(v,k) BC3_dec((unsigned long int *)(v),(unsigned long int *)(k))
+  12      =1  
+  13      =1  #define STATE_OK                0
+  14      =1  #define STATE_ERROR             1
+  15      =1  #define STATE_WRONG             2
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 7   
+
+  16      =1  #define STATE_BLOCKED           3
+  17      =1  
+  18      =1  #define KEY_SIZE               4
+  19      =1  
+  20      =1  /********************************/
+  21      =1  /*        Data Structure        */
+  22      =1  /********************************/
+  23      =1  
+  24      =1  struct state_struct
+  25      =1  {
+  26      =1    unsigned int        current;     ///< pointer to current DF header
+  27      =1    unsigned int        currentKey;    ///< pointer to current Key EF header
+  28      =1    unsigned int        currentRecord;  ///< Record number of currently selected EF
+  29      =1    unsigned char         securityState;  ///< security state currently active
+  30      =1    unsigned char         challenge[CRYPT_BLOCK_LEN];
+  31      =1  };
+  32      =1  
+  33      =1  /**************************/
+  34      =1  /*        Variable        */
+  35      =1  /**************************/
+  36      =1  
+  37      =1  
+  38      =1  /**************************/
+  39      =1  /*        Function        */
+  40      =1  /**************************/
+  41      =1  
+  42      =1  
+  43      =1  int State_Init();
+  44      =1  
+  45      =1  int State_Verify();
+  46      =1  
+  47      =1  void State_GetChallenge();
+  48      =1  
+  49      =1  unsigned char State_VerifyAuth();
+  50      =1  
+  51      =1  int State_SetCurrent(unsigned int newfile);
+  52      =1  
+  53      =1  int State_SetCurrentRecord(unsigned int record_num);
+  54      =1  
+  55      =1  int State_SetCurrentKey(unsigned int newKey);
+  56      =1  
+  57      =1  unsigned int State_GetCurrent();
+  58      =1  
+  59      =1  unsigned int State_GetCurrentRecord();
+  60      =1  
+  61      =1  unsigned char State_GetCurrentSecurity();
+  62      =1  
+  63      =1  void State_GetCurrentChallenge();
+  64      =1  
+  65      =1  #endif
+  10          #include "fs.h"
+   1      =1  
+   2      =1  #ifndef FS_H
+   3      =1  
+   4      =1  #define FS_H
+   5      =1  
+   6      =1  // FS_RESPONSE TO COMMAND
+   7      =1  #define FS_OK                                                   0
+   8      =1  #define FS_ERROR                                                30
+   9      =1  #define FS_ERROR_INSUFFICIENT_SPACE             31
+  10      =1  #define FS_ERROR_NOT_FOUND                              32
+  11      =1  #define FS_ERROR_DUPLICATE_FID                  33
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 8   
+
+  12      =1  #define FS_ERROR_SECURITY_STATUS                34
+  13      =1  #define FS_ERROR_WRONG_FS_STRUCTURE             35
+  14      =1  #define FS_NONE                                                 0XFF
+  15      =1  
+  16      =1  // FS_TAG ID
+  17      =1  #define FS_TAG_MF                                               0x3F
+  18      =1  #define FS_TAG_DF                                               0x4F
+  19      =1  #define FS_TAG_EF                                               0x5F
+  20      =1  
+  21      =1  #define FS_EF_STRUCTURE_TRANSPARENT             0x01
+  22      =1  #define FS_EF_STRUCTURE_RECORD_FIXED    0x02
+  23      =1  #define FS_EF_STRUCTURE_RECORD_VAR              0x04
+  24      =1  #define FS_EF_STRUCTURE_CYCLIC                  0x06
+  25      =1  
+  26      =1  #define FS_EF_TYPE_WORKING              0
+  27      =1  #define FS_EF_TYPE_INTERNAL             1
+  28      =1  
+  29      =1  #define FS_OP_READ              0
+  30      =1  #define FS_OP_UPDATE    1
+  31      =1  #define FS_OP_WRITE             2
+  32      =1  
+  33      =1  // OFFSET FILE
+  34      =1  #define FS_START        CONFIG_FS_START //272
+  35      =1  #define FS_BLOCK_SIZE   CONFIG_FS_BLOCK_SIZE //2
+  36      =1  #define FS_SIZE         CONFIG_FS_SIZE //512
+  37      =1  
+  38      =1  // HEADER DEFINITION
+  39      =1  #define FS_HEADER_TAG_SIZE                      1
+  40      =1  #define FS_HEADER_FID_SIZE                      2
+  41      =1  #define FS_HEADER_PARENT_SIZE           2
+  42      =1  #define FS_HEADER_CHILD_SIZE            2
+  43      =1  #define FS_HEADER_SIBLING_SIZE          2
+  44      =1  #define FS_HEADER_BODY_POINTER_SIZE     2
+  45      =1  
+  46      =1  #define FS_HEADER_SIZE          FS_HEADER_TAG_SIZE + \
+  47      =1                                                          FS_HEADER_FID_SIZE + \
+  48      =1                                                          FS_HEADER_PARENT_SIZE + \
+  49      =1                                                          FS_HEADER_CHILD_SIZE + \
+  50      =1                                                          FS_HEADER_SIBLING_SIZE + \
+  51      =1                                                          FS_HEADER_BODY_POINTER_SIZE
+  52      =1  
+  53      =1  
+  54      =1  #define FS_HEADER_TAG_OFFSET                    0
+  55      =1  #define FS_HEADER_FID_OFFSET                    FS_HEADER_TAG_OFFSET + FS_HEADER_TAG_SIZE
+  56      =1  #define FS_HEADER_PARENT_OFFSET                 FS_HEADER_FID_OFFSET + FS_HEADER_FID_SIZE
+  57      =1  #define FS_HEADER_CHILD_OFFSET                  FS_HEADER_PARENT_OFFSET + FS_HEADER_PARENT_SIZE
+  58      =1  #define FS_HEADER_SIBLING_OFFSET                FS_HEADER_CHILD_OFFSET + FS_HEADER_CHILD_SIZE
+  59      =1  #define FS_HEADER_BODY_POINTER_OFFSET   FS_HEADER_SIBLING_OFFSET + FS_HEADER_SIBLING_SIZE
+  60      =1  
+  61      =1  // BODY HEADER DEFINITION
+  62      =1  #define FS_BODY_STRUCTURE_OFFSET        0
+  63      =1  #define FS_BODY_STRUCTURE_SIZE          1
+  64      =1  #define FS_BODY_TYPE_SIZE                       1
+  65      =1  #define FS_BODY_AC_SIZE                         1
+  66      =1  #define FS_BODY_SIZE_SIZE                       2
+  67      =1  #define FS_BODY_RECORD_LENGTH_SIZE      1
+  68      =1  
+  69      =1  #define FS_BODY_TYPE_OFFSET             FS_BODY_STRUCTURE_OFFSET        + FS_BODY_STRUCTURE_SIZE
+  70      =1  #define FS_BODY_AC_OFFSET               FS_BODY_TYPE_OFFSET             + FS_BODY_TYPE_SIZE
+  71      =1  #define FS_BODY_SIZE_OFFSET     FS_BODY_AC_OFFSET                       + FS_BODY_AC_SIZE
+  72      =1  #define FS_BODY_BODY_OFFSET             FS_BODY_SIZE_OFFSET             + FS_BODY_SIZE_SIZE
+  73      =1  
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 9   
+
+  74      =1  #define FS_BODY_HEADER_SIZE             FS_BODY_STRUCTURE_SIZE + \
+  75      =1                                                                  FS_BODY_TYPE_SIZE + \
+  76      =1                                                                  FS_BODY_AC_SIZE + \
+  77      =1                                                                  FS_BODY_SIZE_SIZE
+  78      =1  
+  79      =1  
+  80      =1  #define FS_BLOCKS                                                               FS_SIZE/FS_BLOCK_SIZE //512/2 =256
+  81      =1  #define FS_ALLOC_TABLE_SIZE                                             (FS_BLOCKS/8)/FS_BLOCK_SIZE //(256/8)/2 = 32
+  82      =1  #define FS_FILE_TABLE_SIZE                                              CONFIG_FS_FILE_TABLE_SIZE/FS_BLOCK_SIZE // 128/2 = 64
+  83      =1  
+  84      =1  
+  85      =1  #define FS_ALLOC_TABLE_OFFSET                                   0
+  86      =1  #define FS_FILE_TABLE_OFFSET                                    FS_ALLOC_TABLE_OFFSET + FS_ALLOC_TABLE_SIZE //0+16 = 16 0x10
+  87      =1  #define FS_FILE_BODY_OFFSET                                             FS_FILE_TABLE_OFFSET + FS_FILE_TABLE_SIZE // 16+64 = 80 = 0x50
+  88      =1  
+  89      =1  #define FS_ALLOC_HEADER(address)                                FSAlloc(CEIL((FS_HEADER_SIZE),FS_BLOCK_SIZE), FS_FILE_TABLE_OFFSET, FS
+             -_FILE_BODY_OFFSET, address)
+  90      =1  #define FS_ALLOC_BODY(address, length)                  FSAlloc(CEIL((FS_BODY_HEADER_SIZE + length),FS_BLOCK_SIZE), FS_FI
+             -LE_BODY_OFFSET, FS_BLOCKS, address);
+  91      =1  
+  92      =1  #define FS_SET_HEADER_TAG(block, src)                   Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_
+             -TAG_OFFSET, FS_HEADER_TAG_SIZE, (unsigned char *)src)
+  93      =1  #define FS_GET_HEADER_TAG(block, dest)                  Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_
+             -TAG_OFFSET, FS_HEADER_TAG_SIZE, (unsigned char *)dest)
+  94      =1  #define FS_SET_HEADER_FID(block, src)                   Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_
+             -FID_OFFSET, FS_HEADER_FID_SIZE, (unsigned char *)src)
+  95      =1  #define FS_GET_HEADER_FID(block, dest)                  Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER_
+             -FID_OFFSET, FS_HEADER_FID_SIZE, (unsigned char *)dest)
+  96      =1  #define FS_GET_HEADER_PARENT(block, dest)               Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADE
+             -R_PARENT_OFFSET, FS_HEADER_PARENT_SIZE, (unsigned char *)dest)
+  97      =1  #define FS_SET_HEADER_PARENT(block, src)                Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADE
+             -R_PARENT_OFFSET, FS_HEADER_PARENT_SIZE, (unsigned char *)src)
+  98      =1  #define FS_GET_HEADER_CHILD(block, dest)                Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER
+             -_CHILD_OFFSET, FS_HEADER_CHILD_SIZE, (unsigned char *)dest)
+  99      =1  #define FS_SET_HEADER_CHILD(block, src)                 Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEADER
+             -_CHILD_OFFSET, FS_HEADER_CHILD_SIZE, (unsigned char *)src)
+ 100      =1  #define FS_GET_HEADER_SIBLING(block, dest)              Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEAD
+             -ER_SIBLING_OFFSET, FS_HEADER_SIBLING_SIZE, (unsigned char *)dest)
+ 101      =1  #define FS_SET_HEADER_SIBLING(block, src)               Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_HEAD
+             -ER_SIBLING_OFFSET, FS_HEADER_SIBLING_SIZE, (unsigned char *)src)
+ 102      =1  #define FS_GET_HEADER_BODY_POINTER(block, dest) Memory_ReadBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_H
+             -EADER_BODY_POINTER_OFFSET, FS_HEADER_BODY_POINTER_SIZE, (unsigned char *)dest)
+ 103      =1  #define FS_SET_HEADER_BODY_POINTER(block, src)  Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_
+             -HEADER_BODY_POINTER_OFFSET, FS_HEADER_BODY_POINTER_SIZE, (unsigned char *)src)
+ 104      =1  
+ 105      =1  
+ 106      =1  #define FS_GET_BODY_STRUCTURE(block, dest)              Memory_ReadBlock (FS_START + (block * FS_BLOCK_SIZE) + FS_BOD
+             -Y_STRUCTURE_OFFSET, FS_BODY_STRUCTURE_SIZE, (unsigned char *)dest)
+ 107      =1  #define FS_SET_BODY_STRUCTURE(block, src)               Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY
+             -_STRUCTURE_OFFSET, FS_BODY_STRUCTURE_SIZE, (unsigned char *)src)
+ 108      =1  #define FS_GET_BODY_TYPE(block, dest)                   Memory_ReadBlock (FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_TY
+             -PE_OFFSET, FS_BODY_TYPE_SIZE, (unsigned char *)dest)
+ 109      =1  #define FS_SET_BODY_TYPE(block, src)                    Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_TYP
+             -E_OFFSET, FS_BODY_TYPE_SIZE, (unsigned char *)src)
+ 110      =1  #define FS_GET_BODY_AC(block, dest)                     Memory_ReadBlock (FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_AC_O
+             -FFSET, FS_BODY_AC_SIZE, (unsigned char *)dest)
+ 111      =1  #define FS_SET_BODY_AC(block, src)                              Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_AC_O
+             -FFSET, FS_BODY_AC_SIZE, (unsigned char *)src)
+ 112      =1  #define FS_GET_BODY_ACUPDATE(block, dest)               Memory_ReadBlock (FS_START + (block * FS_BLOCK_SIZE) + FS_BODY
+             -_ACUPDATE_OFFSET, FS_BODY_ACUPDATE_SIZE, (unsigned char *)dest)
+ 113      =1  #define FS_SET_BODY_ACUPDATE(block, src)                Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_
+             -ACUPDATE_OFFSET, FS_BODY_ACUPDATE_SIZE, (unsigned char *)src)
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 10  
+
+ 114      =1  #define FS_GET_BODY_SIZE(block, dest)                   Memory_ReadBlock (FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_SI
+             -ZE_OFFSET, FS_BODY_SIZE_SIZE, (unsigned char *)dest)
+ 115      =1  #define FS_SET_BODY_SIZE(block, src)                    Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BODY_SIZ
+             -E_OFFSET, FS_BODY_SIZE_SIZE, (unsigned char *)src)
+ 116      =1  #define FS_GET_BODY_BODY(block, length, dest)   Memory_ReadBlock (FS_START + (block * FS_BLOCK_SIZE) + FS_B
+             -ODY_BODY_OFFSET + offset, length, (unsigned char *)dest)
+ 117      =1  #define FS_SET_BODY_BODY(block, length, src)    Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) + FS_BO
+             -DY_BODY_OFFSET + offset, length, (unsigned char *)src)
+ 118      =1  
+ 119      =1  #define FS_GET_RECORD_FIXED_LENGTH(block, dest)                                         Memory_ReadBlock (FS_START + (block * FS_BLOCK_SIZE) 
+             -+ FS_BODY_BODY_OFFSET, FS_BODY_RECORD_LENGTH_SIZE, (unsigned char *)dest)
+ 120      =1  #define FS_SET_RECORD_FIXED_LENGTH(block, src)                                          Memory_WriteBlock(FS_START + (block * FS_BLOCK_SIZE) 
+             -+ FS_BODY_BODY_OFFSET, FS_BODY_RECORD_LENGTH_SIZE, (unsigned char *)src)
+ 121      =1  #define FS_GET_RECORD_FIXED_DATA(block, length, record_num, dest)       Memory_ReadBlock (FS_START + (block * F
+             -S_BLOCK_SIZE) + FS_BODY_BODY_OFFSET + FS_BODY_RECORD_LENGTH_SIZE + (record_num-1)*length, length, (unsigned char *)dest)
+ 122      =1  #define FS_SET_RECORD_FIXED_DATA(block, length, record_num, src)        Memory_WriteBlock(FS_START + (block * FS
+             -_BLOCK_SIZE) + FS_BODY_BODY_OFFSET + FS_BODY_RECORD_LENGTH_SIZE + (record_num-1)*length, length, (unsigned char *)src)
+ 123      =1  
+ 124      =1  #define FS_GET_RECORD_VAR_LENGTH(block, offset, dest)                           Memory_ReadBlock (FS_START + (block * FS_BLOCK_S
+             -IZE) + FS_BODY_BODY_OFFSET + offset, FS_BODY_RECORD_LENGTH_SIZE, (unsigned char *)dest)
+ 125      =1  #define FS_SET_RECORD_VAR_LENGTH(block, offset, src)                            Memory_WriteBlock(FS_START + (block * FS_BLOCK_SI
+             -ZE) + FS_BODY_BODY_OFFSET + offset, FS_BODY_RECORD_LENGTH_SIZE, (unsigned char *)src)
+ 126      =1  
+ 127      =1  #define CEIL(A,B)       ((A%B)==0 ? (A/B) : (A/B + 1))
+ 128      =1  
+ 129      =1  
+ 130      =1  /*****************************/
+ 131      =1  /*        Enumeration        */
+ 132      =1  /*****************************/
+ 133      =1  
+ 134      =1  
+ 135      =1  /****************************/
+ 136      =1  /*      Data Structure      */
+ 137      =1  /****************************/
+ 138      =1  
+ 139      =1  struct EF_st
+ 140      =1  {
+ 141      =1          unsigned int    FID;            ///< File identifier
+ 142      =1          unsigned char   structure;      ///< file structure : Transparent or Record
+ 143      =1          unsigned char   type;           ///< type of file : Working or Internal
+ 144      =1          unsigned char   AC;                     ///< access control for read operation
+ 145      =1          unsigned char   *ptr_body;      ///< pointer to file body
+ 146      =1          unsigned int    file_size;      ///< size of file
+ 147      =1          unsigned char   record_le;      ///< record length
+ 148      =1  } ;
+ 149      =1  
+ 150      =1  struct DF_st
+ 151      =1  {
+ 152      =1          unsigned int    FID;                    ///< File identifier
+ 153      =1          char                    DFname[16];             ///< DF name 
+ 154      =1          char                    asc_flag;               ///< indication to application specific code
+ 155      =1          int                             (* asc)(int);           ///< pointer to the ASC handler
+ 156      =1  } ;
+ 157      =1  
+ 158      =1  /**************************/
+ 159      =1  /*        Variable        */
+ 160      =1  /**************************/
+ 161      =1  
+ 162      =1  
+ 163      =1  /**************************/
+ 164      =1  /*        Function        */
+ 165      =1  /**************************/
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 11  
+
+ 166      =1  unsigned int FS_Init();
+ 167      =1  unsigned int FSAlloc(unsigned int size_alloc, unsigned int startBlock, unsigned int endBlock, unsigned int
+             - * address);
+ 168      =1  int FSGetHeader(unsigned int block_addr, unsigned char offset, unsigned char * dest);
+ 169      =1  
+ 170      =1  unsigned char FS_CheckAC(unsigned int op);
+ 171      =1  
+ 172      =1  unsigned char FS_GetAC();
+ 173      =1  unsigned int FSFormat();
+ 174      =1  
+ 175      =1  unsigned int FS_SelectFID(unsigned int fid);
+ 176      =1  unsigned int FSSelectMF();
+ 177      =1  unsigned int FS_SearchAllFID(unsigned int fid);
+ 178      =1  
+ 179      =1  unsigned int FSAccessBinary(unsigned int op, unsigned int offset, unsigned int length, unsigned char *data
+             -byte);
+ 180      =1  unsigned int FSCreateHeader(unsigned char tag, unsigned int fid, unsigned int * addr);
+ 181      =1  unsigned int FSCreateBodyEF(struct EF_st * desc, unsigned int * addr);
+ 182      =1  unsigned int FSCreateFile(unsigned int tag, void * desc);
+ 183      =1  
+ 184      =1  unsigned int FSDeleteFile(unsigned int fid);
+ 185      =1  unsigned int FSFree(unsigned int address, unsigned int length);
+ 186      =1  unsigned int FS_CheckChildSibling_FID(unsigned int fid, unsigned int current);
+ 187      =1  #endif
+  11          
+  12          sbit ATR_START = P1^3;
+  13          sbit ATR_DONE = P1^4;
+  14          unsigned char buf[CRYPT_BLOCK_LEN];
+  15          
+  16          void main(void){
+  17   1              ATR_START = 1;
+  18   1              ATR_DONE = 1;
+  19   1              init_HW();
+  20   1              
+  21   1              send_ATR_direct();
+  22   1              State_Init();
+  23   1              FS_Init();
+  24   1      
+  25   1                      ATR_DONE = 0;
+  26   1              while(1){
+  27   2                      Transmission_GetHeader();
+  28   2                      Command_Interpreter();
+  29   2                      Transmission_SendSW();
+  30   2              }
+  31   1      
+  32   1      }
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 12  
+
+ASSEMBLY LISTING OF GENERATED OBJECT CODE
+
+
+             ; FUNCTION main (BEGIN)
+                                           ; SOURCE LINE # 16
+                                           ; SOURCE LINE # 17
+0000 D293              SETB    ATR_START
+                                           ; SOURCE LINE # 18
+0002 D294              SETB    ATR_DONE
+                                           ; SOURCE LINE # 19
+0004 120000      E     LCALL   init_HW
+                                           ; SOURCE LINE # 21
+0007 120000      E     LCALL   send_ATR_direct
+                                           ; SOURCE LINE # 22
+000A 120000      E     LCALL   State_Init
+                                           ; SOURCE LINE # 23
+000D 120000      E     LCALL   FS_Init
+                                           ; SOURCE LINE # 25
+0010 C294              CLR     ATR_DONE
+0012         ?C0001:
+                                           ; SOURCE LINE # 26
+                                           ; SOURCE LINE # 27
+0012 120000      E     LCALL   Transmission_GetHeader
+                                           ; SOURCE LINE # 28
+0015 120000      E     LCALL   Command_Interpreter
+                                           ; SOURCE LINE # 29
+0018 120000      E     LCALL   Transmission_SendSW
+                                           ; SOURCE LINE # 30
+001B 80F5              SJMP    ?C0001
+             ; FUNCTION main (END)
+
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 13  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+P1 . . . . . . . . . . . . . . . . . .  SFR      DATA   U_CHAR   0090H  1
+Response_Warning_Unchanged . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_CmdNotAllowed_Incompatible_FS  E_CONST  -----  U_CHAR   -----  1
+Response_CLANotSupported . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_Auth_Success. . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_Warning_FilledUp. . . . . . .  E_CONST  -----  U_CHAR   -----  1
+FS_Init. . . . . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+Response_CmdNotAllowed_SecurityStatus.  E_CONST  -----  U_CHAR   -----  1
+Response_NotSupported_LogicalChannel .  E_CONST  -----  U_CHAR   -----  1
+Response_Warning_Changed . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_INSNotSupported . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_Normal. . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_NotSupported_SecureMessaging.  E_CONST  -----  U_CHAR   -----  1
+main . . . . . . . . . . . . . . . . .  PUBLIC   CODE   PROC     0000H  -----
+Response_NotSupported_LastCommandExpec  E_CONST  -----  U_CHAR   -----  1
+Transmission_SendSW. . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+Response_WrongLength . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+state_struct . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  15
+  current. . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0000H  2
+  currentKey . . . . . . . . . . . . .  MEMBER   -----  U_INT    0002H  2
+  currentRecord. . . . . . . . . . . .  MEMBER   -----  U_INT    0004H  2
+  securityState. . . . . . . . . . . .  MEMBER   -----  U_CHAR   0006H  1
+  challenge. . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0007H  8
+Response_FatalError. . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_CmdNotAllowed_ExpectSecureMsg  E_CONST  -----  U_CHAR   -----  1
+Response_CmdNotAllowed_ConditionNotSat  E_CONST  -----  U_CHAR   -----  1
+Response_NotSupported. . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_Error_Unchanged . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+init_HW. . . . . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+Response_WrongP1P2_FuncNotSupported. .  E_CONST  -----  U_CHAR   -----  1
+buf. . . . . . . . . . . . . . . . . .  PUBLIC   XDATA  ARRAY    0000H  8
+Response_WrongP1P2_FileExist . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2_NCInconsistentTLV .  E_CONST  -----  U_CHAR   -----  1
+Command_Interpreter. . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+Response_NotSupported_CommandChain . .  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2_RecordNotFound. . .  E_CONST  -----  U_CHAR   -----  1
+Response_Warning_EndOfFile . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2_DFNameExist . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2 . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_CmdNotAllowed . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2_NCInconsistentP1P2.  E_CONST  -----  U_CHAR   -----  1
+Response_OK. . . . . . . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_Error_Changed . . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+DF_st. . . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  22
+  FID. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0000H  2
+  DFname . . . . . . . . . . . . . . .  MEMBER   -----  ARRAY    0002H  16
+  asc_flag . . . . . . . . . . . . . .  MEMBER   -----  CHAR     0012H  1
+  asc. . . . . . . . . . . . . . . . .  MEMBER   -----  PTR      0013H  3
+EF_st. . . . . . . . . . . . . . . . .  * TAG *  -----  STRUCT   -----  11
+  FID. . . . . . . . . . . . . . . . .  MEMBER   -----  U_INT    0000H  2
+  structure. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0002H  1
+  type . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0003H  1
+  AC . . . . . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   0004H  1
+  ptr_body . . . . . . . . . . . . . .  MEMBER   -----  PTR      0005H  3
+  file_size. . . . . . . . . . . . . .  MEMBER   -----  U_INT    0008H  2
+  record_le. . . . . . . . . . . . . .  MEMBER   -----  U_CHAR   000AH  1
+send_ATR_direct. . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+C51 COMPILER V9.01   MAIN                                                                  02/22/2017 16:00:36 PAGE 14  
+
+NAME                                    CLASS   MSPACE  TYPE    OFFSET  SIZE
+====                                    =====   ======  ====    ======  ====
+
+
+Response_Warning_Counter . . . . . . .  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2_IncorrectData . . .  E_CONST  -----  U_CHAR   -----  1
+ATR_START. . . . . . . . . . . . . . .  ABSBIT   -----  BIT      0093H  1
+Response_Warning_FileDeactivated . . .  E_CONST  -----  U_CHAR   -----  1
+Response_CmdNotAllowed_RefDataNotUsable E_CONST  -----  U_CHAR   -----  1
+Response_CmdNotAllowed_NoCurrentEF . .  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2_IncorrectP1P2 . . .  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2_FileNotFound. . . .  E_CONST  -----  U_CHAR   -----  1
+Response_Warning_DataCorrupt . . . . .  E_CONST  -----  U_CHAR   -----  1
+Transmission_GetHeader . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+Response_WrongP1P2_NotEnoughMem. . . .  E_CONST  -----  U_CHAR   -----  1
+rspn_type. . . . . . . . . . . . . . .  TYPEDEF  -----  U_CHAR   -----  1
+ATR_DONE . . . . . . . . . . . . . . .  ABSBIT   -----  BIT      0094H  1
+Response_CmdNotAllowed_IncorrectSecure  E_CONST  -----  U_CHAR   -----  1
+Response_WrongP1P2_RefDataNotFound . .  E_CONST  -----  U_CHAR   -----  1
+Response_CmdNotAllowed_AuthBlocked . .  E_CONST  -----  U_CHAR   -----  1
+State_Init . . . . . . . . . . . . . .  EXTERN   CODE   PROC     -----  -----
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     29    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      8    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

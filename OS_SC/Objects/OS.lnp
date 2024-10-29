@@ -1,0 +1,13 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\memory.obj",
+".\Objects\hal.obj",
+".\Objects\i2c.obj",
+".\Objects\command.obj",
+".\Objects\response.obj",
+".\Objects\transmission.obj",
+".\Objects\state.obj",
+".\Objects\fs.obj",
+".\Objects\krisna.obj" 
+TO ".\Objects\OS" 
+PRINT(".\Listings\OS.m51")
